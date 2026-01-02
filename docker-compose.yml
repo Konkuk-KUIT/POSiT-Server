@@ -1,7 +1,6 @@
 services:
-  db:
+  mysql:
     image: mysql:8.0
-    container_name: posit-local-mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: posit
@@ -15,6 +14,17 @@ services:
       - --collation-server=utf8mb4_unicode_ci
     volumes:
       - posit_mysql_data:/var/lib/mysql
+
+  app:
+    build: .
+    container_name: posit-app
+    depends_on:
+      - mysql
+    ports:
+      - "8081:8080"   # 로컬에서 8081로 접속 (충돌 방지)
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    restart: unless-stopped
 
 volumes:
   posit_mysql_data:
