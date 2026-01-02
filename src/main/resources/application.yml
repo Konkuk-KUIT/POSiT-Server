@@ -1,0 +1,28 @@
+server:
+  port: 8080
+
+spring:
+  profiles:
+    default: local
+
+  jpa:
+    hibernate:
+      ddl-auto: validate   # create/update 금지 (Flyway로만 관리)
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+  session:
+    store-type: jdbc
+    jdbc:
+      initialize-schema: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

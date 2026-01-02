@@ -1,0 +1,7 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/posit?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+        포트 본인 docker에 맞게 수정하면 됩니다.
+    username: posit
+    password: positpw
+    driver-class-name: com.mysql.cj.jdbc.Driver
