@@ -28,13 +28,24 @@ services:
 
   nginx:
     image: nginx:1.27-alpine
+    container_name: nginx-proxy
     depends_on:
       - app
     ports:
       - "80:80"
     volumes:
+      # 메인 설정 파일 연결
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      # [추가] 스위치 파일이 있는 폴더를 통째로 conf.d에 연결
+      # 이렇게 해야 나중에 스크립트로 이 안의 파일을 덮어쓸 수 있습니다.
+      - ./nginx/service-url.inc:/etc/nginx/conf.d/service-url.inc
     restart: unless-stopped
+    networks:
+      - app-network
 
 volumes:
   posit_mysql_data:
+
+networks:
+  app-network:
+    driver: bridge
