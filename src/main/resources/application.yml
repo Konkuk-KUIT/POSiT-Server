@@ -7,7 +7,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate   # create/update 금지 (Flyway로만 관리)
+      ddl-auto: create   # create/update 금지 (Flyway로만 관리) # 데모데이 1주일 전쯤에 validate
     properties:
       hibernate:
         format_sql: true
