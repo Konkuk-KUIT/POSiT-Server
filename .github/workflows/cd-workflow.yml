@@ -5,10 +5,6 @@ on:
     branches:
       - 'dev'
       - 'main'
-  pull_request:
-    branches:
-      - 'dev'
-      - 'main'
 
 permissions:
   contents: read
@@ -34,10 +30,14 @@ jobs:
         run: ./gradlew clean build -x test --stacktrace
 
       - name: 🐳 Docker build & push
-        run:  |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          docker build -f Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE }} .
-          docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE }}
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          docker build -f Dockerfile \
+            -t "${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE }}:latest" \
+            -t "${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE }}:${{ github.sha }}" \
+            .
+          docker push "${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE }}:latest"
+          docker push "${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE }}:${{ github.sha }}"
 
       - name: 🚀 deploy to server
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' # push 에서만 배포하고 PR은 빌드/테스트만 수행
@@ -47,19 +47,25 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_KEY }}
           port: ${{ secrets.EC2_PORT }}
-          envs: GITHUB_SHA
           script: |
-            echo "✋🏻Stopping existing container"
-            sudo docker stop posit
-            sudo docker rm posit
-        
-            sudo docker ps -a
-            
-            echo "🥳 Pulling new image"
-            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE }}
-            
-            echo "🌱 Running new container"
-            sudo docker run -d -p 8080:8080 --name posit ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE }}
+            set -e
+            # TODO: change <YOUR_REPO_DIR> to the folder on EC2 where docker-compose.yml (and .env) live
+            cd /home/ec2-user/POSiT-Server
 
+            echo "✅ Docker login (needed for private images)"
+            echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+            echo "🧷 Set image tag for this deploy"
+            echo "IMAGE_TAG=${{ github.sha }}" > .env.ci_tag
+
+            echo "🥳 Pulling new app image"
+            docker compose --env-file .env --env-file .env.ci_tag pull app
+
+            echo "🌱 Recreating app container only (keep mysql/nginx)"
+            docker compose --env-file .env --env-file .env.ci_tag up -d --no-deps app
+
+            echo "📌 Current status"
+            docker compose ps
+            
             echo "🚮 Cleaning up old images"
-            sudo docker image prune -f
+            docker image prune -f
