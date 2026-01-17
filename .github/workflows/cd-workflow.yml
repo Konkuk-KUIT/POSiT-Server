@@ -49,23 +49,29 @@ jobs:
           port: ${{ secrets.EC2_PORT }}
           script: |
             set -e
-            # TODO: change <YOUR_REPO_DIR> to the folder on EC2 where docker-compose.yml (and .env) live
             cd /home/ec2-user/POSiT-Server
-
-            echo "✅ Docker login (needed for private images)"
-            echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
+            
+            echo "✅ Sync tracked deploy files (keep .env)"
+            git fetch origin
+            git reset --hard origin/main
+            
+            echo "✅ Docker login"
+            echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+            
             echo "🧷 Set image tag for this deploy"
-            echo "IMAGE_TAG=${{ github.sha }}" > .env.ci_tag
-
-            echo "🥳 Pulling new app image"
+            echo "IMAGE_TAG=${GITHUB_SHA}" > .env.ci_tag
+            
+            echo "🥳 Pull new app image"
             docker compose --env-file .env --env-file .env.ci_tag pull app
-
-            echo "🌱 Recreating app container only (keep mysql/nginx)"
+            
+            echo "🌱 Recreate app container"
             docker compose --env-file .env --env-file .env.ci_tag up -d --no-deps app
-
-            echo "📌 Current status"
+            
+            echo "🔁 Reload nginx (if config changed)"
+            docker compose --env-file .env --env-file .env.ci_tag exec -T nginx nginx -s reload || true
+            
+            echo "📌 Status"
             docker compose ps
             
-            echo "🚮 Cleaning up old images"
+            echo "🚮 Cleanup"
             docker image prune -f
