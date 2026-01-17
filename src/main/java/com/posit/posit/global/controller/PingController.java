@@ -8,6 +8,6 @@ public class PingController {
 
     @GetMapping("/api/ping")
     public String ping() {
-        return "pong-cd!PR";
+        return "pong-cd!PR12";
     }
 }
