@@ -1,4 +1,4 @@
-package com.posit.posit.controller;
+package com.posit.posit.global.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
