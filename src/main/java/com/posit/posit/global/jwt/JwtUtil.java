@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,9 +14,8 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.Date;
-import java.time.Instant;
 import java.util.Base64;
+import java.util.Date;
 import java.util.Optional;
 
 @Component
@@ -30,7 +30,21 @@ public class JwtUtil {
             @Value("${jwt.access-expiry-ms:900000}") long accessTokenExpiryMs, //기본 15분
             @Value("${jwt.refresh-expiry-ms:1209600000}") long refreshTokenExpiryMs // 기본 14일
     ) {
-        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        byte[] keyBytes;
+        try {
+            // Prefer Base64-encoded secrets (common in env/secret managers)
+            keyBytes = Decoders.BASE64.decode(secret);
+        } catch (IllegalArgumentException ignore) {
+            // Fallback: treat as raw text
+            keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        }
+
+        // HS256 requires at least 256-bit (32-byte) key length
+        if (keyBytes.length < 32) {
+            throw new IllegalArgumentException("JWT secret is too short. Use at least 32 bytes (256-bit) for HS256.");
+        }
+
+        this.key = Keys.hmacShaKeyFor(keyBytes);
         this.accessTokenExpiryMs = accessTokenExpiryMs;
         this.refreshTokenExpiryMs = refreshTokenExpiryMs;
     }
@@ -46,21 +60,14 @@ public class JwtUtil {
 
 
     private String generateToken(Long userId, String role, String tokenType, long expiryMs) {
-        Instant now = Instant.now();
-        Instant exp = now.plusMillis(expiryMs);
+        Date now = new Date();
+        Date exp = new Date(now.getTime() + expiryMs);
 
-//        return Jwts.builder()
-//                    .header().type("JWT").and()
-//                    .subject(userId.toString())
-//                    .issuedAt(Date.from(now))
-//                    .expiration(Date.from(exp))
-//                    .signWith(key)
-//                    .compact();
         var builder = Jwts.builder()
                 .header().type("JWT").and()
                 .subject(userId.toString())
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(exp))
+                .setIssuedAt(now)
+                .setExpiration(exp)
                 .claim("tokenType", tokenType);
         if (role != null) {
             builder.claim("role", role);
@@ -87,7 +94,7 @@ public class JwtUtil {
 
     public Long getUserId(String token) {
         Claims claims = parseClaimsSafely(token)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid token"));
+                .orElseThrow(() -> new JwtException("Invalid token"));
         return Long.parseLong(claims.getSubject());
     }
 
@@ -97,6 +104,24 @@ public class JwtUtil {
 
     public Optional<String> getTokenType(String token) {
         return parseClaimsSafely(token).map(c -> c.get("tokenType", String.class));
+    }
+
+    public String getTokenTypeOrThrow(String token) {
+        return getTokenType(token).orElseThrow(() -> new JwtException("Missing tokenType"));
+    }
+
+    public void assertAccessToken(String token) {
+        String type = getTokenTypeOrThrow(token);
+        if (!"ACCESS".equals(type)) {
+            throw new JwtException("Not an access token");
+        }
+    }
+
+    public void assertRefreshToken(String token) {
+        String type = getTokenTypeOrThrow(token);
+        if (!"REFRESH".equals(type)) {
+            throw new JwtException("Not a refresh token");
+        }
     }
 
     /**

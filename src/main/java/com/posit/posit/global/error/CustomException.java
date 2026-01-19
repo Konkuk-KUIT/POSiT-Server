@@ -1,6 +1,5 @@
-package com.posit.posit.global.common.exception;
+package com.posit.posit.global.error;
 
-import com.posit.posit.global.common.response.ErrorCode;
 import lombok.Getter;
 
 @Getter

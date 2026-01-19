@@ -3,7 +3,7 @@ package com.posit.posit.domain.auth.controller;
 import com.posit.posit.domain.auth.dto.request.SignupRequest;
 import com.posit.posit.domain.auth.dto.response.SignupResponse;
 import com.posit.posit.domain.auth.service.AuthService;
-import com.posit.posit.global.common.response.ApiResponse;
+import com.posit.posit.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;

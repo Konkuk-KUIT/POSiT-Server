@@ -1,4 +1,4 @@
-package com.posit.posit.global.common;
+package com.posit.posit.global.jpa;
 
 import jakarta.persistence.*;
 import lombok.Getter;

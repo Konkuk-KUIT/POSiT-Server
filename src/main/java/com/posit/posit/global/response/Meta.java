@@ -1,4 +1,4 @@
-package com.posit.posit.global.common.response;
+package com.posit.posit.global.response;
 
 public record Meta(
         String orderType,
