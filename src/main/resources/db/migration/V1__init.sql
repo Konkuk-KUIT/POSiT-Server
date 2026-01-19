@@ -34,7 +34,7 @@ CREATE TABLE owner_profile (
 -- 3) store
 CREATE TABLE store (
                        id BIGINT NOT NULL AUTO_INCREMENT,
-                       owner_id BIGINT NOT NULL,
+                       owner_id BIGINT NULL,
                        name VARCHAR(20) NOT NULL,
                        description VARCHAR(50) NOT NULL,
                        category ENUM('CAFE','RESTAURANT') NOT NULL DEFAULT 'CAFE',
@@ -45,10 +45,13 @@ CREATE TABLE store (
                        road_address VARCHAR(30) NOT NULL,
                        lot_address VARCHAR(30) NULL,
                        sns_link VARCHAR(255) NULL,
-                       coupon_pin_hash VARCHAR(255) NOT NULL,
+                       coupon_pin_hash VARCHAR(255) NULL,
+                       business_number VARCHAR(10) NOT NULL,
                        PRIMARY KEY (id),
                        KEY idx_store_owner (owner_id),
-                       KEY idx_store_geo (latitude, longitude)
+                       KEY idx_store_geo (latitude, longitude),
+                       KEY idx_store_business_number (business_number),
+                       UNIQUE KEY uk_store_business_number (business_number)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 4) store_image
