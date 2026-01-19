@@ -1,0 +1,116 @@
+package com.posit.posit.global.jwt;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import lombok.Getter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.sql.Date;
+import java.time.Instant;
+import java.util.Base64;
+import java.util.Optional;
+
+@Component
+@Getter
+public class JwtUtil {
+    private final SecretKey key;
+    private final long accessTokenExpiryMs;
+    private final long refreshTokenExpiryMs;
+
+    public JwtUtil(
+            @Value("${JWT_SECRET}") String secret,
+            @Value("${jwt.access-expiry-ms:900000}") long accessTokenExpiryMs, //기본 15분
+            @Value("${jwt.refresh-expiry-ms:1209600000}") long refreshTokenExpiryMs // 기본 14일
+    ) {
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.accessTokenExpiryMs = accessTokenExpiryMs;
+        this.refreshTokenExpiryMs = refreshTokenExpiryMs;
+    }
+
+    // 인증 인가에 사용 / subject : userId, claims : role , header : typ=JWT
+    public String generateAccessToken(Long userId, String role) {
+        return generateToken(userId, role, "ACCESS", accessTokenExpiryMs);
+    }
+
+    public String generateRefreshToken(Long userId) {
+        return generateToken(userId, null, "REFRESH", refreshTokenExpiryMs);
+    }
+
+
+    private String generateToken(Long userId, String role, String tokenType, long expiryMs) {
+        Instant now = Instant.now();
+        Instant exp = now.plusMillis(expiryMs);
+
+//        return Jwts.builder()
+//                    .header().type("JWT").and()
+//                    .subject(userId.toString())
+//                    .issuedAt(Date.from(now))
+//                    .expiration(Date.from(exp))
+//                    .signWith(key)
+//                    .compact();
+        var builder = Jwts.builder()
+                .header().type("JWT").and()
+                .subject(userId.toString())
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(exp))
+                .claim("tokenType", tokenType);
+        if (role != null) {
+            builder.claim("role", role);
+        }
+
+        return builder.signWith(key).compact();
+    }
+    /**
+     * 토큰 파싱(검증 포함). 실패하면 empty.
+     */
+    public Optional<Claims> parseClaimsSafely(String token) {
+        try {
+            Jws<Claims> jws = Jwts.parser().verifyWith(key).build()
+                    .parseSignedClaims(token);
+            return Optional.of(jws.getPayload());
+        } catch (JwtException | IllegalArgumentException e) {
+            return Optional.empty();
+        }
+    }
+
+    public boolean isValid(String token) {
+        return parseClaimsSafely(token).isPresent();
+    }
+
+    public Long getUserId(String token) {
+        Claims claims = parseClaimsSafely(token)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid token"));
+        return Long.parseLong(claims.getSubject());
+    }
+
+    public Optional<String> getRole(String token) {
+        return parseClaimsSafely(token).map(c -> c.get("role", String.class));
+    }
+
+    public Optional<String> getTokenType(String token) {
+        return parseClaimsSafely(token).map(c -> c.get("tokenType", String.class));
+    }
+
+    /**
+     * DB에는 refreshToken 원문 저장 지양 -> 해시 저장 권장
+     * - 운영에선 token 원문이 유출되면 즉시 세션 탈취 가능
+     */
+    public String hashRefreshToken(String rawRefreshToken) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashed = digest.digest(rawRefreshToken.getBytes(StandardCharsets.UTF_8));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(hashed);
+        } catch (NoSuchAlgorithmException e) {
+            // SHA-256은 JVM에 기본 포함이라 사실상 발생하지 않지만, 명시적으로 처리
+            throw new IllegalStateException("SHA-256 not supported", e);
+        }
+    }
+}

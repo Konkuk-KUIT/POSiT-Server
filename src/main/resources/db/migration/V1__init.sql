@@ -21,11 +21,10 @@ CREATE TABLE users (
                        UNIQUE KEY uq_users_phone (phone)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 2) owner_profile (1:1 users)
+-- 2) owner_profile (status 제거)
 CREATE TABLE owner_profile (
                                id BIGINT NOT NULL AUTO_INCREMENT,
                                business_number VARCHAR(10) NOT NULL COMMENT '- 포함 안한 숫자만 10자리',
-                               status ENUM('CERTIFIED','NOT_CERTIFIED') NOT NULL DEFAULT 'NOT_CERTIFIED',
                                user_id BIGINT NOT NULL,
                                PRIMARY KEY (id),
                                UNIQUE KEY uq_owner_profile_user (user_id),
@@ -182,7 +181,6 @@ CREATE TABLE phone_verification (
                                     id BIGINT NOT NULL AUTO_INCREMENT,
                                     phone VARCHAR(11) NOT NULL,
                                     code_hash VARCHAR(200) NOT NULL,
-                                    purpose ENUM('LOGIN','SIGNUP') NOT NULL DEFAULT 'SIGNUP',
                                     expired_at DATETIME NOT NULL,
                                     verified_at DATETIME NULL,
                                     attempt_count INT NOT NULL DEFAULT 0,
@@ -190,8 +188,8 @@ CREATE TABLE phone_verification (
                                     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                                     status ENUM('PENDING','VERIFIED','EXPIRED','LOCKED','CANCELLED') NOT NULL DEFAULT 'PENDING',
                                     PRIMARY KEY (id),
-                                    KEY idx_phone_purpose_created (phone, purpose, created_at),
-                                    KEY idx_phone_purpose_expired (phone, purpose, expired_at)
+                                    KEY idx_phone_created (phone, created_at),
+                                    KEY idx_phone_expired (phone, expired_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 13) filter
