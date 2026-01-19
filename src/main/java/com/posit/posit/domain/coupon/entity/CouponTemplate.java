@@ -26,7 +26,6 @@ public class CouponTemplate {
     @Column(name = "description", length = 50)
     private String description;
 
-    @Lob
     @Column(name = "image")
     private String image;
 

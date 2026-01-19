@@ -23,12 +23,12 @@ public class RefreshTokenService {
     // 리프레시 토큰 조회
     @Transactional
     public Optional<AuthRefreshToken> findRefreshToken(String refreshToken) {
-        return refreshTokenRepository.findByValue(refreshToken);
+        return refreshTokenRepository.findByTokenHash(refreshToken);
     }
 
     // 리프레시 토큰 삭제
     public void deleteRefreshToken(String refreshToken) {
-        refreshTokenRepository.findByValue(refreshToken).ifPresent(refreshTokenRepository::delete);
+        refreshTokenRepository.findByTokenHash(refreshToken).ifPresent(refreshTokenRepository::delete);
     }
 
     // 사용자 기반 리프레시 토큰 삭제
@@ -38,6 +38,6 @@ public class RefreshTokenService {
 
     // 리프레시 토큰 유효성 검증
     public boolean isRefreshTokenValid(String refreshToken) {
-        return refreshTokenRepository.existsByValue(refreshToken);
+        return refreshTokenRepository.existsByTokenHash(refreshToken);
     }
 }

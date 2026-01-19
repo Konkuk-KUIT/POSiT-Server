@@ -45,11 +45,9 @@ public class IssuedCoupon {
     @Column(name = "title", length = 20, nullable = false)
     private String title;
 
-    @Lob
     @Column(name = "description")
     private String description;
 
-    @Lob
     @Column(name = "image")
     private String image;
 

@@ -41,7 +41,6 @@ public class Memo {
     @Column(name = "content", length = 150, nullable = false)
     private String content;
 
-    @Lob
     @Column(name = "image")
     private String image;
 
