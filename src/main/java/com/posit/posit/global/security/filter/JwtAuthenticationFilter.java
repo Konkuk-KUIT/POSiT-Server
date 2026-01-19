@@ -1,4 +1,4 @@
-package com.posit.posit.global.security;
+package com.posit.posit.global.security.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.posit.posit.global.error.ErrorCode;
@@ -12,12 +12,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+
 import org.springframework.http.MediaType;
 
 @Slf4j
@@ -25,7 +28,7 @@ import org.springframework.http.MediaType;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -35,7 +38,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         return path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs")
-                || path.startsWith("/actuator/health");
+                || path.startsWith("/actuator/health")
+                || path.startsWith("/error");
     }
 
     @Override
@@ -57,8 +61,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             Long userId = jwtUtil.getUserId(token);
 
+            // role -> authorities 세팅
+            String role = jwtUtil.getRole(token).orElse("GUEST");
+            List<SimpleGrantedAuthority> authorities =
+                    List.of(new SimpleGrantedAuthority("ROLE_" + role));
+
             UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(userId, null, Collections.emptyList());
+                    new UsernamePasswordAuthenticationToken(userId, null, authorities);
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
             filterChain.doFilter(request, response);
@@ -77,8 +86,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return auth.substring(7);
     }
 
-    private void writeErrorResponse(HttpServletResponse response, ErrorCode errorCode)
-            throws IOException {
+    private void writeErrorResponse(HttpServletResponse response, ErrorCode errorCode) throws IOException {
 
         response.setStatus(errorCode.getHttpStatus().value());
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
