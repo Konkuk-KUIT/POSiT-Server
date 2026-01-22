@@ -5,12 +5,15 @@ import com.posit.posit.global.jwt.JwtUtil;
 import com.posit.posit.global.security.filter.JwtAuthenticationFilter;
 import com.posit.posit.global.security.handler.RestAccessDeniedHandler;
 import com.posit.posit.global.security.handler.RestAuthenticationEntryPoint;
+import io.jsonwebtoken.security.Password;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -64,5 +67,11 @@ public class SecurityConfig {
 
         return http.build();
     }
+    //todo:@PreAuthorize("hasRole('OWNER')") 로 컨트롤러 단에서 권한 막기 (URL만으로 구분 어려운 memos/memoId는 둘다지만 수정은 게스트만)
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 }
-//todo:@PreAuthorize("hasRole('OWNER')") 로 컨트롤러 단에서 권한 막기 (URL만으로 구분 어려운 memos/memoId는 둘다지만 수정은 게스트만)
+

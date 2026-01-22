@@ -14,7 +14,7 @@ import lombok.*;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
-@Builder
+@Builder(access = AccessLevel.PROTECTED)
 public class OwnerProfile {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,5 +29,12 @@ public class OwnerProfile {
             foreignKey = @ForeignKey(name = "fk_owner_profile_user"))
     @Setter
     private User user;
+
+    public static OwnerProfile create(User user, String businessNumber) {
+        OwnerProfile profile = new OwnerProfile();
+        profile.businessNumber = businessNumber;
+        user.attachOwnerProfile(profile);
+        return profile;
+    }
 }
 

@@ -16,6 +16,8 @@ CREATE TABLE users (
                        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                        last_login_at DATETIME NULL,
+                       birth DATE NULL,
+                       gender VARCHAR(10) NULL,
                        PRIMARY KEY (id),
                        UNIQUE KEY uq_users_login_id (login_id),
                        UNIQUE KEY uq_users_phone (phone)
@@ -77,6 +79,7 @@ CREATE TABLE menu (
                       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                       updated_at DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                       image VARCHAR(2048) NULL,
+                      type VARCHAR(15) NOT NULL,
                       PRIMARY KEY (id),
                       KEY idx_menu_store (store_id),
                       KEY idx_menu_store_order (store_id, sort_order)
@@ -131,7 +134,7 @@ CREATE TABLE memo (
                       KEY idx_memo_store_created (store_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 9) decision (memo:decision = 1:1 이라면 UNIQUE(memo_id) 걸어도 됨)
+-- 9) decision
 CREATE TABLE decision (
                           id BIGINT NOT NULL AUTO_INCREMENT,
                           memo_id BIGINT NOT NULL,
@@ -208,7 +211,7 @@ CREATE TABLE filter (
                         KEY idx_filter_category (category)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 14) store_filter (JPA-friendly)
+-- 14) store_filter
 CREATE TABLE store_filter (
                               id BIGINT NOT NULL AUTO_INCREMENT,
                               store_id BIGINT NOT NULL,
@@ -238,39 +241,6 @@ CREATE TABLE store_convince (
                                 UNIQUE KEY uq_store_convince (store_id, convince_id),
                                 KEY idx_store_convince_store (store_id),
                                 KEY idx_store_convince_convince (convince_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 17) review
-CREATE TABLE review (
-                        id BIGINT NOT NULL AUTO_INCREMENT,
-                        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                        store_id BIGINT NOT NULL,
-                        user_id BIGINT NOT NULL,
-                        PRIMARY KEY (id),
-                        KEY idx_review_store (store_id),
-                        KEY idx_review_user (user_id),
-                        KEY idx_review_store_created (store_id, created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 18) review_item
-CREATE TABLE review_item (
-                             id BIGINT NOT NULL AUTO_INCREMENT,
-                             code VARCHAR(20) NOT NULL,
-                             display_name VARCHAR(255) NOT NULL,
-                             PRIMARY KEY (id),
-                             UNIQUE KEY uq_review_item_code (code)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 19) review_choice (review - review_item N:M)
-CREATE TABLE review_choice (
-                               id BIGINT NOT NULL AUTO_INCREMENT,
-                               review_id BIGINT NOT NULL,
-                               review_item_id BIGINT NOT NULL,
-                               created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                               PRIMARY KEY (id),
-                               UNIQUE KEY uq_review_choice (review_id, review_item_id),
-                               KEY idx_review_choice_review (review_id),
-                               KEY idx_review_choice_item (review_item_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -------------------------------------------------
@@ -380,26 +350,6 @@ ALTER TABLE store_convince
 ALTER TABLE store_convince
     ADD CONSTRAINT fk_store_convince_convince
         FOREIGN KEY (convince_id) REFERENCES convince(id)
-            ON DELETE RESTRICT ON UPDATE RESTRICT;
-
-ALTER TABLE review
-    ADD CONSTRAINT fk_review_store
-        FOREIGN KEY (store_id) REFERENCES store(id)
-            ON DELETE RESTRICT ON UPDATE RESTRICT;
-
-ALTER TABLE review
-    ADD CONSTRAINT fk_review_user
-        FOREIGN KEY (user_id) REFERENCES users(id)
-            ON DELETE RESTRICT ON UPDATE RESTRICT;
-
-ALTER TABLE review_choice
-    ADD CONSTRAINT fk_review_choice_review
-        FOREIGN KEY (review_id) REFERENCES review(id)
-            ON DELETE RESTRICT ON UPDATE RESTRICT;
-
-ALTER TABLE review_choice
-    ADD CONSTRAINT fk_review_choice_item
-        FOREIGN KEY (review_item_id) REFERENCES review_item(id)
             ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 SET FOREIGN_KEY_CHECKS = 1;

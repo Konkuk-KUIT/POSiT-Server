@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
-@Builder
+@Builder(access = AccessLevel.PROTECTED)
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,6 +51,12 @@ public class User {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
+    @Column(name = "birth")
+    private String birth;
+
+    @Column(name = "gender")
+    private Gender gender;
+
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private OwnerProfile ownerProfile;
 
@@ -73,5 +79,20 @@ public class User {
 
     void updateLastLoginAt() {
         this.lastLoginAt = LocalDateTime.now();
+    }
+
+    public static User create(String loginId,
+                              String encodedPassword,
+                              String name,
+                              String phone,
+                              UserRole role) {
+        User user = new User();
+        user.loginId = loginId;
+        user.password = encodedPassword;
+        user.name = name;
+        user.phone = phone;
+        user.role = role;
+        user.status = UserStatus.ACTIVE;
+        return user;
     }
 }

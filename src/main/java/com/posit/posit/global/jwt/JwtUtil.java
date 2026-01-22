@@ -14,6 +14,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Optional;
@@ -58,16 +59,19 @@ public class JwtUtil {
         return generateToken(userId, null, "REFRESH", refreshTokenExpiryMs);
     }
 
+    private LocalDateTime expiredAtFrom(LocalDateTime issuedAt, long expiryMs) {
+        return issuedAt.plusNanos(expiryMs * 1_000_000);
+    }
 
     private String generateToken(Long userId, String role, String tokenType, long expiryMs) {
-        Date now = new Date();
-        Date exp = new Date(now.getTime() + expiryMs);
+        LocalDateTime issuedAt = LocalDateTime.now();
+        LocalDateTime expiredAt = expiredAtFrom(issuedAt, expiryMs);
 
         var builder = Jwts.builder()
                 .header().type("JWT").and()
                 .subject(userId.toString())
-                .setIssuedAt(now)
-                .setExpiration(exp)
+                .setIssuedAt(java.sql.Timestamp.valueOf(issuedAt))
+                .setExpiration(java.sql.Timestamp.valueOf(expiredAt))
                 .claim("tokenType", tokenType);
         if (role != null) {
             builder.claim("role", role);
@@ -75,6 +79,7 @@ public class JwtUtil {
 
         return builder.signWith(key).compact();
     }
+
     /**
      * 토큰 파싱(검증 포함). 실패하면 empty.
      */
@@ -137,5 +142,13 @@ public class JwtUtil {
             // SHA-256은 JVM에 기본 포함이라 사실상 발생하지 않지만, 명시적으로 처리
             throw new IllegalStateException("SHA-256 not supported", e);
         }
+    }
+
+    public LocalDateTime accessTokenExpiredAtFromNow() {
+        return LocalDateTime.now().plusNanos(accessTokenExpiryMs * 1_000_000);
+    }
+
+    public LocalDateTime refreshTokenExpiredAtFromNow() {
+        return LocalDateTime.now().plusNanos(refreshTokenExpiryMs * 1_000_000);
     }
 }

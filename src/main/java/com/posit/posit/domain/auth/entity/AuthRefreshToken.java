@@ -44,9 +44,12 @@ public class AuthRefreshToken {
     @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_refresh_token_user"))
     private User user;
 
-    @PrePersist
-    void prePersist() {
-        this.createdAt = LocalDateTime.now();
+    public static AuthRefreshToken issue(User user, String tokenHash, LocalDateTime expiredAt) {
+        return AuthRefreshToken.builder()
+                .user(user)
+                .tokenHash(tokenHash)
+                .expiredAt(expiredAt)
+                .build();
     }
 
     public void revoke() {

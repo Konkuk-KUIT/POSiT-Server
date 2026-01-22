@@ -46,4 +46,39 @@ public class PhoneVerification {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private PhoneVerificationStatus status;
+
+    public boolean isVerified() {
+        return status == PhoneVerificationStatus.VERIFIED
+                && verifiedAt != null;
+    }
+
+    public boolean isExpired(LocalDateTime now) {
+        return now.isAfter(expiredAt) || status == PhoneVerificationStatus.EXPIRED;
+    }
+
+    public void updateCodeHash(String codeHash) {
+        this.codeHash = codeHash;
+    }
+
+    public void updateExpiredAt(LocalDateTime expiredAt) {
+        this.expiredAt = expiredAt;
+    }
+
+    public void markPending() {
+        this.status = PhoneVerificationStatus.PENDING;
+        this.verifiedAt = null;
+    }
+
+    public void markVerified(LocalDateTime now) {
+        this.status = PhoneVerificationStatus.VERIFIED;
+        this.verifiedAt = now;
+    }
+
+    public void increaseAttempt() {
+        this.attemptCount++;
+    }
+
+    public void increaseResend() {
+        this.resendCount++;
+    }
 }

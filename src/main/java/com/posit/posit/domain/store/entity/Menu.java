@@ -44,6 +44,9 @@ public class Menu {
     @Column(name = "image", length = 2048)
     private String image;
 
+    @Column(name = "type")
+    private MenuType type;
+
     void setStore(Store store) {
         this.store = store;
     }
