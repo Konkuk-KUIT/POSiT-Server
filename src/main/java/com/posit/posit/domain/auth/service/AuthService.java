@@ -9,6 +9,8 @@ import com.posit.posit.domain.auth.entity.AuthRefreshToken;
 import com.posit.posit.domain.auth.entity.PhoneVerification;
 import com.posit.posit.domain.auth.repository.PhoneVerificationRepository;
 import com.posit.posit.domain.auth.repository.RefreshTokenRepository;
+import com.posit.posit.domain.store.entity.Store;
+import com.posit.posit.domain.store.repository.StoreRepository;
 import com.posit.posit.domain.user.entity.OwnerProfile;
 import com.posit.posit.domain.user.entity.User;
 import com.posit.posit.domain.user.entity.UserRole;
@@ -35,6 +37,7 @@ public class AuthService {
 
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtProvider;
+    private final StoreRepository storeRepository;
 
     @Transactional
     public SignupResponse signup(SignupRequest req) {
@@ -69,14 +72,22 @@ public class AuthService {
                 passwordEncoder.encode(req.password()),
                 req.name(),
                 req.phone(),
-                req.role()
+                req.role(),
+                req.birth(),
+                req.gender()
         );
         userRepository.save(user);
 
-        // 4) OWNER면 owner_profile 생성 (예시)
+        // 4) OWNER면 owner_profile 생성 + store.owner_id 연결
         if (req.role() == UserRole.OWNER) {
-            OwnerProfile owner = OwnerProfile.create(user, req.ownerProfile().businessNumber());
+            String businessNumber = req.ownerProfile().businessNumber();
+
+            OwnerProfile owner = OwnerProfile.create(user, businessNumber);
             ownerProfileRepository.save(owner);
+
+            Store store = storeRepository.findByBusinessNumber(businessNumber)
+                    .orElseThrow(()->new CustomException(ErrorCode.STORE_NOT_FOUND));
+            store.assignOwner(user, req.ownerProfile().couponPin());
         }
 
         // 5) 토큰 발급 + refreshToken 저장

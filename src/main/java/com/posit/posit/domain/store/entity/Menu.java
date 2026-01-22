@@ -44,6 +44,7 @@ public class Menu {
     @Column(name = "image", length = 2048)
     private String image;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "type")
     private MenuType type;
 

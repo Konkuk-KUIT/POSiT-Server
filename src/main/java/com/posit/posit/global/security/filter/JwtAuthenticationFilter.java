@@ -33,7 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
-
+        System.out.println("path = " + path);
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) return true;
 
         return path.startsWith("/swagger-ui")

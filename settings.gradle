@@ -1,1 +1,3 @@
 rootProject.name = 'posit'
+
+include 'init'

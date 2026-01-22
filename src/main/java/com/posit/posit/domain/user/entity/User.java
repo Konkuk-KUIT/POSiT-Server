@@ -3,6 +3,7 @@ package com.posit.posit.domain.user.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -52,8 +53,9 @@ public class User {
     private LocalDateTime lastLoginAt;
 
     @Column(name = "birth")
-    private String birth;
+    private LocalDate birth;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "gender")
     private Gender gender;
 
@@ -85,13 +87,17 @@ public class User {
                               String encodedPassword,
                               String name,
                               String phone,
-                              UserRole role) {
+                              UserRole role,
+                              LocalDate birth,
+                              Gender gender ) {
         User user = new User();
         user.loginId = loginId;
         user.password = encodedPassword;
         user.name = name;
         user.phone = phone;
         user.role = role;
+        user.birth = birth;
+        user.gender = gender;
         user.status = UserStatus.ACTIVE;
         return user;
     }

@@ -21,8 +21,8 @@ public enum ErrorCode {
     DUPLICATE_LOGIN_ID(HttpStatus.CONFLICT, 40902, "이미 존재하는 loginId입니다."),
     PHONE_NOT_VERIFIED(HttpStatus.UNAUTHORIZED, 40102, "번호 인증이 완료되지 않았습니다."),
     PHONE_VERIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, 40401, "번호가 맞지 않습니다."),
-    PHONE_VERIFICATION_ATTEMPT_LIMIT(HttpStatus.FORBIDDEN, 40301, "휴대폰 인증 횟수 초과 제한");
-
+    PHONE_VERIFICATION_ATTEMPT_LIMIT(HttpStatus.FORBIDDEN, 40301, "휴대폰 인증 횟수 초과 제한"),
+    STORE_NOT_FOUND(HttpStatus.NOT_FOUND, 40401, "해당 가게를 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final int code;
