@@ -1,0 +1,29 @@
+package com.posit.posit.domain.auth.dto.request;
+
+import com.posit.posit.domain.user.entity.Gender;
+import com.posit.posit.domain.user.entity.UserRole;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+import java.time.LocalDate;
+import java.util.Date;
+
+public record SignupRequest(
+        @NotNull
+        UserRole role,
+        @NotBlank @Size(min = 4, max = 15)
+        String loginId,
+        @NotBlank @Size(min = 8, max = 15)
+        String password,
+        @NotBlank @Size(max = 10)
+        String name,
+        @NotBlank @Size(max = 11)
+        String phone,
+        OwnerProfileRequest ownerProfile,
+        @NotBlank
+        String signupToken,
+        Gender gender,
+        LocalDate birth
+) {
+}
