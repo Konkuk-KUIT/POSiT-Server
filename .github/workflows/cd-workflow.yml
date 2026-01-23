@@ -40,38 +40,44 @@ jobs:
           docker push "${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE }}:${{ github.sha }}"
 
       - name: 🚀 deploy to server
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' # push 에서만 배포하고 PR은 빌드/테스트만 수행
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: appleboy/ssh-action@master
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          DOCKER_IMAGE: ${{ secrets.DOCKER_IMAGE }}
+          GITHUB_SHA: ${{ github.sha }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_KEY }}
           port: ${{ secrets.EC2_PORT }}
+          envs: DOCKER_USERNAME,DOCKER_PASSWORD,DOCKER_IMAGE,GITHUB_SHA
           script: |
             set -e
             cd /home/ec2-user/POSiT-Server
-            
+
             echo "✅ Sync tracked deploy files (keep .env)"
             git fetch origin
             git reset --hard origin/main
-            
+
             echo "✅ Docker login"
-            echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-            
+            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
             echo "🧷 Set image tag for this deploy"
-            echo "IMAGE_TAG=${GITHUB_SHA}" > .env.ci_tag
-            
+            echo "IMAGE_TAG=$GITHUB_SHA" > .env.ci_tag
+
             echo "🥳 Pull new app image"
             docker compose --env-file .env --env-file .env.ci_tag pull app
-            
+
             echo "🌱 Recreate app container"
             docker compose --env-file .env --env-file .env.ci_tag up -d --no-deps app
-            
+
             echo "🔁 Reload nginx (if config changed)"
             docker compose --env-file .env --env-file .env.ci_tag exec -T nginx nginx -s reload || true
-            
+
             echo "📌 Status"
             docker compose ps
-            
+
             echo "🚮 Cleanup"
             docker image prune -f
