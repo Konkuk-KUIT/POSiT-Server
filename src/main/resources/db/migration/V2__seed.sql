@@ -12,7 +12,7 @@ INSERT INTO phone_verification (
     status
 ) VALUES (
              '01012345678',                       -- 화이트리스트 번호
-             '$2a$10$demodemocodedemodemo1234567890abcdef', -- 임의의 hash 문자열 (bcrypt 흉내)
+             '$2a$10$demodemocodedemodemoabcdef', -- 임의의 hash 문자열 (bcrypt 흉내)
              DATE_ADD(NOW(), INTERVAL 1 DAY),     -- 만료: 내일
              NOW(),                               -- 이미 인증된 상태로 처리
              0,
