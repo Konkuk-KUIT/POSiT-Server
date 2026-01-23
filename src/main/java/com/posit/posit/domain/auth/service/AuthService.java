@@ -1,12 +1,15 @@
 package com.posit.posit.domain.auth.service;
 
+import com.posit.posit.domain.auth.dto.request.PhoneVerificationConfirmRequest;
 import com.posit.posit.domain.auth.dto.request.PhoneVerificationRequest;
 import com.posit.posit.domain.auth.dto.request.SignupRequest;
+import com.posit.posit.domain.auth.dto.response.PhoneVerificationConfirmResponse;
 import com.posit.posit.domain.auth.dto.response.PhoneVerificationResponse;
 import com.posit.posit.domain.auth.dto.response.SignupResponse;
 import com.posit.posit.domain.auth.dto.response.TokenResponse;
 import com.posit.posit.domain.auth.entity.AuthRefreshToken;
 import com.posit.posit.domain.auth.entity.PhoneVerification;
+import com.posit.posit.domain.auth.entity.PhoneVerificationStatus;
 import com.posit.posit.domain.auth.repository.PhoneVerificationRepository;
 import com.posit.posit.domain.auth.repository.RefreshTokenRepository;
 import com.posit.posit.domain.store.entity.Store;
@@ -27,6 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+import static java.time.LocalDateTime.*;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -46,7 +51,7 @@ public class AuthService {
                 .findTopByPhoneOrderByCreatedAtDesc(req.phone())
                 .orElseThrow(() -> new CustomException(ErrorCode.PHONE_VERIFICATION_NOT_FOUND));
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = now();
 
         // 만료된 인증은 무효 처리
         if (pv.isExpired(now)) {
@@ -86,7 +91,7 @@ public class AuthService {
             ownerProfileRepository.save(owner);
 
             Store store = storeRepository.findByBusinessNumber(businessNumber)
-                    .orElseThrow(()->new CustomException(ErrorCode.STORE_NOT_FOUND));
+                    .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
             store.assignOwner(user, req.ownerProfile().couponPin());
         }
 
@@ -115,7 +120,7 @@ public class AuthService {
 
         Long userId = Long.valueOf(claims.getSubject());
         String tokenHash = jwtProvider.hashRefreshToken(refreshTokenRaw);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = now();
 
         // 3) DB에 저장된 "현재 유효한(refresh, not revoked, not expired)" 토큰인지 확인
         AuthRefreshToken current = tokenRepository
@@ -139,28 +144,58 @@ public class AuthService {
         return TokenResponse.of(newAccess, newRefresh);
     }
 
-    private static final int MAX_RESEND = 5;
-    private static final int MAX_ATTEMPT = 5;
+    private static final int MAX_RESEND = 999999;
+    private static final int MAX_ATTEMPT = 999999;
 
     private static final String DEMO_CODE = "123123";
+    private static final String DEMO_PHONE = "01012345678";
+    private static final String DEMO_HASH = "$2a$10$demodemocodedemodemoabcdef";
 
     @Transactional
     public PhoneVerificationResponse phoneVerify(PhoneVerificationRequest req) {
+        LocalDateTime now = now();
         PhoneVerification pv = phoneVerificationRepository
                 .findTopByPhoneOrderByCreatedAtDesc(req.phone())
-                .orElseThrow(() -> new CustomException(ErrorCode.PHONE_VERIFICATION_NOT_FOUND));
-        LocalDateTime now = LocalDateTime.now();
+                .orElseGet(() -> phoneVerificationRepository.save(
+                        PhoneVerification.builder()
+                                .phone(req.phone())
+                                .codeHash(DEMO_HASH)
+                                .expiredAt(now.plusMinutes(5))
+                                .attemptCount(0)
+                                .resendCount(0)
+                                .status(PhoneVerificationStatus.PENDING)
+                                .build()
+                ));
+
 
         if (pv.getResendCount() != null && pv.getResendCount() >= MAX_RESEND) {
             throw new CustomException(ErrorCode.BAD_REQUEST);
         }
 
-        if(pv.isVerified()) {
+        // 이미 인증된 경우
+        if (pv.isVerified()) {
             return PhoneVerificationResponse.from(pv);
+        }
+
+        // resend 카운트 증가 (null-safe)
+        if (pv.getResendCount() == null) {
+            // legacy 데이터 대비
+            pv = PhoneVerification.builder()
+                    .id(pv.getId())
+                    .phone(pv.getPhone())
+                    .codeHash(pv.getCodeHash())
+                    .expiredAt(pv.getExpiredAt())
+                    .verifiedAt(pv.getVerifiedAt())
+                    .attemptCount(pv.getAttemptCount() == null ? 0 : pv.getAttemptCount())
+                    .resendCount(0)
+                    .createdAt(pv.getCreatedAt())
+                    .status(pv.getStatus())
+                    .build();
         }
         pv.increaseResend();
 
-        pv.updateCodeHash(passwordEncoder.encode(DEMO_CODE));
+        // 데모: SMS 미발송이므로 codeHash는 고정값 유지(혹은 갱신해도 됨)
+        pv.updateCodeHash(DEMO_HASH);
 
         pv.updateExpiredAt(now.plusMinutes(5));
 
@@ -175,34 +210,62 @@ public class AuthService {
      * - codeHash 비교 -> mismatch면 에러
      * - 성공하면 VERIFIED로 전환
      */
-
-    public PhoneVerificationResponse confirm(String phone, String code) {
+    @Transactional
+    public PhoneVerificationConfirmResponse confirm(PhoneVerificationConfirmRequest req) {
         PhoneVerification pv = phoneVerificationRepository
-                .findTopByPhoneOrderByCreatedAtDesc(phone)
+                .findById(req.verificationId())
                 .orElseThrow(() -> new CustomException(ErrorCode.PHONE_VERIFICATION_NOT_FOUND));
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = now();
+
+        // verificationId를 다른 번호로 재사용하는 위변조 방지
+        if (!pv.getPhone().equals(req.phone())) {
+            throw new CustomException(ErrorCode.PHONE_VERIFICATION_NOT_FOUND);
+        }
 
         if (pv.isExpired(now)) {
             throw new CustomException(ErrorCode.PHONE_VERIFICATION_EXPIRED);
         }
-        if (pv.getAttemptCount() != null && pv.getAttemptCount() >= MAX_ATTEMPT) {
+
+        Integer attempt = pv.getAttemptCount();
+        if (attempt != null && attempt >= MAX_ATTEMPT) {
             throw new CustomException(ErrorCode.PHONE_VERIFICATION_ATTEMPT_LIMIT);
         }
-
         // 이미 인증된 경우 idempotent 처리
         if (pv.isVerified()) {
-            return PhoneVerificationResponse.from(pv);
+            return PhoneVerificationConfirmResponse.from(pv);
         }
 
+        // attempt 증가 (null-safe)
+        if (pv.getAttemptCount() == null) {
+            // legacy 데이터 대비
+            pv = PhoneVerification.builder()
+                    .id(pv.getId())
+                    .phone(pv.getPhone())
+                    .codeHash(pv.getCodeHash())
+                    .expiredAt(pv.getExpiredAt())
+                    .verifiedAt(pv.getVerifiedAt())
+                    .attemptCount(0)
+                    .resendCount(pv.getResendCount() == null ? 0 : pv.getResendCount())
+                    .createdAt(pv.getCreatedAt())
+                    .status(pv.getStatus())
+                    .build();
+        }
         pv.increaseAttempt();
 
-        // 코드 비교 (BCrypt는 equals 비교가 아니라 matches 사용!)
-        if (!passwordEncoder.matches(code, pv.getCodeHash())) {
+        // 데모 정책: 화이트리스트 번호만 통과
+        // (데모데이 전까지는 SMS 발송이 없으니 code는 형식만 받고, 통과 조건은 phone만 본다)
+        if (!DEMO_PHONE.equals(req.phone())) {
             throw new CustomException(ErrorCode.PHONE_VERIFICATION_CODE_MISMATCH);
         }
 
         pv.markVerified(now);
-        return PhoneVerificationResponse.from(pv);
+
+        final PhoneVerification finalPv = pv;
+
+        // 기존 회원 검증 후 응답 분기처리
+        return userRepository.findByPhone(req.phone())
+                .map(user -> PhoneVerificationConfirmResponse.existing(finalPv, user.getId()))
+                .orElseGet(() -> PhoneVerificationConfirmResponse.newUser(finalPv, DEMO_CODE));
     }
 }
