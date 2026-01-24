@@ -252,7 +252,10 @@ public class AuthService {
         }
         // 이미 인증된 경우 idempotent 처리
         if (pv.isVerified()) {
-            return PhoneVerificationConfirmResponse.from(pv);
+            final PhoneVerification finalPv = pv;
+            return userRepository.findByPhone(req.phone())
+                    .map(user -> PhoneVerificationConfirmResponse.existing(finalPv, user.getId()))
+                    .orElseGet(() -> PhoneVerificationConfirmResponse.newUser(finalPv, DEMO_CODE));
         }
 
         // attempt 증가 (null-safe)

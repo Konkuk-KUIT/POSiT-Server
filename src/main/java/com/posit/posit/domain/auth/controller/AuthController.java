@@ -1,9 +1,7 @@
 package com.posit.posit.domain.auth.controller;
 
-import com.posit.posit.domain.auth.dto.request.LogoutRequest;
-import com.posit.posit.domain.auth.dto.request.PhoneVerificationConfirmRequest;
-import com.posit.posit.domain.auth.dto.request.PhoneVerificationRequest;
-import com.posit.posit.domain.auth.dto.request.SignupRequest;
+import com.posit.posit.domain.auth.dto.request.*;
+import com.posit.posit.domain.auth.dto.response.LoginResponse;
 import com.posit.posit.domain.auth.dto.response.PhoneVerificationConfirmResponse;
 import com.posit.posit.domain.auth.dto.response.PhoneVerificationResponse;
 import com.posit.posit.domain.auth.dto.response.SignupResponse;
@@ -41,5 +39,10 @@ public class AuthController {
     public ApiResponse<Void> logout(@RequestBody LogoutRequest request) {
         authService.logout(request);
         return ApiResponse.success(null);
+    }
+
+    @PostMapping("/login")
+    public ApiResponse<LoginResponse> login(@RequestBody LoginRequest request) {
+        return ApiResponse.success(authService.login(request));
     }
 }
