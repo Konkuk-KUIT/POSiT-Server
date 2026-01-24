@@ -1,5 +1,6 @@
 package com.posit.posit.domain.auth.service;
 
+import com.posit.posit.domain.auth.dto.request.LogoutRequest;
 import com.posit.posit.domain.auth.dto.request.PhoneVerificationConfirmRequest;
 import com.posit.posit.domain.auth.dto.request.PhoneVerificationRequest;
 import com.posit.posit.domain.auth.dto.request.SignupRequest;
@@ -267,5 +268,31 @@ public class AuthService {
         return userRepository.findByPhone(req.phone())
                 .map(user -> PhoneVerificationConfirmResponse.existing(finalPv, user.getId()))
                 .orElseGet(() -> PhoneVerificationConfirmResponse.newUser(finalPv, DEMO_CODE));
+    }
+
+    @Transactional
+    public void logout(LogoutRequest req) {
+        String refreshToken = req.refreshToken();
+        // 1) refreshToken JWT 자체 유효성(서명/만료) 검증 + Claims 추출
+        Claims claims = jwtProvider.parseClaimsSafely(refreshToken)
+                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
+
+        // 2) 토큰 타입 확인 (ACCESS로 로그아웃 시도 방지)
+        String tokenType = claims.get("tokenType", String.class);
+        if (!"REFRESH".equals(tokenType)) {
+            throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+        }
+
+        Long userId = Long.valueOf(claims.getSubject());
+        String tokenHash = jwtProvider.hashRefreshToken(refreshToken);
+        LocalDateTime now = LocalDateTime.now();
+
+        // 3) DB에 저장된 현재 유효한 refresh 토큰인지 확인 후 revoke
+        AuthRefreshToken current = tokenRepository
+                .findByUserIdAndTokenHashAndRevokedAtIsNullAndExpiredAtAfter(userId, tokenHash, now)
+                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
+
+        // 4) revoke 처리 (dirty checking으로 revoked_at 업데이트)
+        current.revoke();
     }
 }
