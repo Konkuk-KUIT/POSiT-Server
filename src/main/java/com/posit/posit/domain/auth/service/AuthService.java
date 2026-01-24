@@ -1,13 +1,7 @@
 package com.posit.posit.domain.auth.service;
 
-import com.posit.posit.domain.auth.dto.request.LogoutRequest;
-import com.posit.posit.domain.auth.dto.request.PhoneVerificationConfirmRequest;
-import com.posit.posit.domain.auth.dto.request.PhoneVerificationRequest;
-import com.posit.posit.domain.auth.dto.request.SignupRequest;
-import com.posit.posit.domain.auth.dto.response.PhoneVerificationConfirmResponse;
-import com.posit.posit.domain.auth.dto.response.PhoneVerificationResponse;
-import com.posit.posit.domain.auth.dto.response.SignupResponse;
-import com.posit.posit.domain.auth.dto.response.TokenResponse;
+import com.posit.posit.domain.auth.dto.request.*;
+import com.posit.posit.domain.auth.dto.response.*;
 import com.posit.posit.domain.auth.entity.AuthRefreshToken;
 import com.posit.posit.domain.auth.entity.PhoneVerification;
 import com.posit.posit.domain.auth.entity.PhoneVerificationStatus;
@@ -18,16 +12,19 @@ import com.posit.posit.domain.store.repository.StoreRepository;
 import com.posit.posit.domain.user.entity.OwnerProfile;
 import com.posit.posit.domain.user.entity.User;
 import com.posit.posit.domain.user.entity.UserRole;
+import com.posit.posit.domain.user.entity.UserStatus;
 import com.posit.posit.domain.user.repository.OwnerProfileRepository;
 import com.posit.posit.domain.user.repository.UserRepository;
 import com.posit.posit.global.error.CustomException;
 import com.posit.posit.global.error.ErrorCode;
 import com.posit.posit.global.jwt.JwtUtil;
 import io.jsonwebtoken.Claims;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.time.LocalDateTime;
 
@@ -105,6 +102,27 @@ public class AuthService {
         tokenRepository.save(AuthRefreshToken.issue(user, hashed, exp));
 
         return SignupResponse.of(user, accessToken, refreshToken);
+    }
+
+    @Transactional
+    public LoginResponse login(@NotNull LoginRequest req) {
+        User user = userRepository.findByLoginId(req.loginId())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if (user.getStatus() != null && user.getStatus().equals(UserStatus.INACTIVE)) {
+            throw new IllegalStateException("비활성화된 유저");
+        }
+        if (!passwordEncoder.matches(req.password(), user.getPassword())) {
+            throw new CustomException(ErrorCode.INVALID_PASSWORD);
+        }
+        // 5) 토큰 발급 + refreshToken 저장
+        String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getName());
+        String refreshToken = jwtProvider.generateRefreshToken(user.getId());
+
+        String hashed = jwtProvider.hashRefreshToken(refreshToken);
+        LocalDateTime exp = jwtProvider.refreshTokenExpiredAtFromNow();
+        tokenRepository.save(AuthRefreshToken.issue(user, hashed, exp));
+        return LoginResponse.of(user, accessToken, refreshToken);
     }
 
     @Transactional

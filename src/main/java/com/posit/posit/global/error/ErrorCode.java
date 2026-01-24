@@ -22,8 +22,9 @@ public enum ErrorCode {
     PHONE_NOT_VERIFIED(HttpStatus.UNAUTHORIZED, 40102, "번호 인증이 완료되지 않았습니다."),
     PHONE_VERIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, 40401, "번호가 맞지 않습니다."),
     PHONE_VERIFICATION_ATTEMPT_LIMIT(HttpStatus.FORBIDDEN, 40301, "휴대폰 인증 횟수 초과 제한"),
-    STORE_NOT_FOUND(HttpStatus.NOT_FOUND, 40401, "해당 가게를 찾을 수 없습니다.");
-
+    STORE_NOT_FOUND(HttpStatus.NOT_FOUND, 40401, "해당 가게를 찾을 수 없습니다."),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, 40402, "해당 유저를 찾을 수 없습니다"),
+    INVALID_PASSWORD(HttpStatus.BAD_REQUEST, 40003, "유효하지 않는 비밀번호입니다.");
     private final HttpStatus httpStatus;
     private final int code;
     private final String message;
