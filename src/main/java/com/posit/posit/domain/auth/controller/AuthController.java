@@ -1,7 +1,8 @@
 package com.posit.posit.domain.auth.controller;
 
-import com.posit.posit.domain.auth.dto.request.PhoneVerificationRequest;
-import com.posit.posit.domain.auth.dto.request.SignupRequest;
+import com.posit.posit.domain.auth.dto.request.*;
+import com.posit.posit.domain.auth.dto.response.LoginResponse;
+import com.posit.posit.domain.auth.dto.response.PhoneVerificationConfirmResponse;
 import com.posit.posit.domain.auth.dto.response.PhoneVerificationResponse;
 import com.posit.posit.domain.auth.dto.response.SignupResponse;
 import com.posit.posit.domain.auth.service.AuthService;
@@ -28,7 +29,20 @@ public class AuthController {
     public ApiResponse<PhoneVerificationResponse> phoneVerify(@Valid @RequestBody PhoneVerificationRequest request) {
         return ApiResponse.success(authService.phoneVerify(request));
     }
-//
-//    @PostMapping("/phone/verification/confirm")
-//    public ApiResponse<Phone>
+
+    @PostMapping("/phone/verification/confirm")
+    public ApiResponse<PhoneVerificationConfirmResponse> phoneConfirm(@RequestBody PhoneVerificationConfirmRequest request) {
+        return ApiResponse.success(authService.confirm(request));
+    }
+
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout(@RequestBody LogoutRequest request) {
+        authService.logout(request);
+        return ApiResponse.success(null);
+    }
+
+    @PostMapping("/login")
+    public ApiResponse<LoginResponse> login(@RequestBody LoginRequest request) {
+        return ApiResponse.success(authService.login(request));
+    }
 }
