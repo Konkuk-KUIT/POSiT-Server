@@ -2,7 +2,7 @@ package com.posit.posit.global.security.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.posit.posit.global.error.ErrorCode;
-import com.posit.posit.global.response.ApiResponse;
+import com.posit.posit.global.error.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +30,6 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
         response.setStatus(errorCode.getHttpStatus().value());
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.getWriter().write(objectMapper.writeValueAsString(ApiResponse.fail(errorCode)));
+        response.getWriter().write(objectMapper.writeValueAsString(ErrorResponse.fail(errorCode)));
     }
 }

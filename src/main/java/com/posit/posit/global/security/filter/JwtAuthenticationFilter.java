@@ -2,8 +2,8 @@ package com.posit.posit.global.security.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.posit.posit.global.error.ErrorCode;
+import com.posit.posit.global.error.ErrorResponse;
 import com.posit.posit.global.jwt.JwtUtil;
-import com.posit.posit.global.response.ApiResponse;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -17,7 +17,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -36,8 +35,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         System.out.println("path = " + path);
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) return true;
 
-        return path.startsWith("/swagger-ui")
-                || path.startsWith("/v3/api-docs")
+        return path.startsWith("/swagger-ui/**")
+                || path.startsWith("/v3/api-docs/**")
                 || path.startsWith("/actuator/health")
                 || path.startsWith("/error");
     }
@@ -92,7 +91,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
-        ApiResponse<Void> body = ApiResponse.fail(errorCode);
+        ErrorResponse body = ErrorResponse.fail(errorCode);
         response.getWriter().write(objectMapper.writeValueAsString(body));
         response.getWriter().flush();
     }
