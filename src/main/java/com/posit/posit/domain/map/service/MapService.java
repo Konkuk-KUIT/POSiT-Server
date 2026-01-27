@@ -4,13 +4,18 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.posit.posit.domain.map.dto.request.MapStoreListQuery;
 import com.posit.posit.domain.map.dto.request.MapStoreMarkerQuery;
+import com.posit.posit.domain.map.dto.response.MapStoreDetailResponse;
 import com.posit.posit.domain.map.dto.response.MapStoreListResponse;
 import com.posit.posit.domain.map.dto.response.MapStoreMarkerResponse;
-import com.posit.posit.domain.store.repository.StoreMapRepository;
+import com.posit.posit.domain.store.entity.Store;
+import com.posit.posit.domain.store.repository.*;
 import com.posit.posit.domain.store.service.StoreOpenCalculator;
+import com.posit.posit.global.error.CustomException;
+import com.posit.posit.global.error.ErrorCode;
 import com.posit.posit.global.response.Meta;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.nio.charset.StandardCharsets;
@@ -28,6 +33,13 @@ public class MapService {
 
     private final StoreMapRepository storeMapRepository;
     private final ObjectMapper objectMapper;
+    private final StoreRepository storeRepository;
+    private final StoreConvinceRepository storeConvinceRepository;
+    private final StoreImageRepository storeImageRepository;
+    private final MenuRepository menuRepository;
+    private final ConcernRepository concernRepository;
+    private final MemoRepository memoRepository;
+    private final StoreFilterRepository storeFilterRepository;
 
     /**
      * 지도 마커 조회 (가벼운 응답)
@@ -179,5 +191,81 @@ public class MapService {
         if (hasRoad) return roadAddress;
         if (hasLot) return lotAddress;
         return "";
+    }
+
+    @Transactional
+    public MapStoreDetailResponse getDetail(Long storeId) {
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
+        String statusCode = StoreOpenCalculator.calculateStatusCode(store.getOpenTime(), store.getNotOpen());
+        // 편의시설
+        List<MapStoreDetailResponse.ConvinceItem> convince = storeConvinceRepository.findDisplayNamesByStoreId(storeId)
+                .stream()
+                .map(MapStoreDetailResponse.ConvinceItem::new)
+                .toList();
+        // image
+        List<MapStoreDetailResponse.ImageItem> images = storeImageRepository.findAllByStoreIdOrderBySortOrderAsc(storeId)
+                .stream()
+                .map(img -> new MapStoreDetailResponse.ImageItem(
+                        img.getId(),
+                        img.getImageUrl(),
+                        img.getThumbnailUrl(),
+                        img.getSortOrder()
+                ))
+                .toList();
+        // menu
+        List<MapStoreDetailResponse.MenuItem> menu = menuRepository.findAllByStoreIdOrderBySortOrderAsc(storeId)
+                .stream()
+                .map(m -> new MapStoreDetailResponse.MenuItem(
+                        m.getImage(),         // 컬럼명이 image
+                        m.getType(),          // VARCHAR(15)
+                        m.getName(),
+                        m.getPrice(),
+                        m.getSortOrder()
+                ))
+                .toList();
+
+        // positPreview (concern 1 + memo 2)
+        MapStoreDetailResponse.PositPreview.ConcernPreview concernPreview = null;
+        var concern = concernRepository.findLatestPreviewByStoreId(storeId);
+        if (concern != null) {
+            concernPreview = new MapStoreDetailResponse.PositPreview.ConcernPreview(
+                    concern.getConcernId(),
+                    concern.getContent()
+            );
+        }
+
+        List<MapStoreDetailResponse.PositPreview.MemoPreview> memoPreviews =
+                memoRepository.findLatest2PreviewByStoreId(storeId)
+                        .stream()
+                        .map(p -> new MapStoreDetailResponse.PositPreview.MemoPreview(
+                                p.getMemoId(),
+                                p.getContent()
+                        ))
+                        .toList();
+
+        MapStoreDetailResponse.PositPreview positPreview =
+                new MapStoreDetailResponse.PositPreview(concernPreview, memoPreviews);
+
+        // typeCode: store_filter에서 category=TYPE 인 필터의 code 1개를 대표값으로 내려줌 (없으면 null)
+        String typeCode = storeFilterRepository.findFirstTypeCodeByStoreId(storeId).orElse(null);
+
+        return new MapStoreDetailResponse(
+                store.getId(),
+                store.getName(),
+                store.getCategory(),
+                typeCode,
+                store.getDescription(),
+                statusCode,
+                store.getOpenTime(),
+                store.getNotOpen() == null ? null : store.getNotOpen(),
+                new MapStoreDetailResponse.Address(store.getRoadAddress(), store.getLotAddress()),
+                new MapStoreDetailResponse.Location(store.getLatitude().doubleValue(), store.getLongitude().doubleValue()),
+                store.getSnsLink(),
+                convince,
+                images,
+                menu,
+                positPreview
+        );
     }
 }

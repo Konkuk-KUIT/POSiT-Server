@@ -1,6 +1,5 @@
 package com.posit.posit.domain.map.dto.request;
 
-import com.posit.posit.domain.store.entity.StoreFilter;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
