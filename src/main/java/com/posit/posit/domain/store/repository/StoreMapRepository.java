@@ -1,6 +1,7 @@
 package com.posit.posit.domain.store.repository;
 
 import com.posit.posit.domain.store.entity.Store;
+import com.posit.posit.domain.store.entity.Weekday;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -36,7 +37,7 @@ public interface StoreMapRepository extends JpaRepository<Store, Long> {
                 :type IS NULL OR EXISTS (
                   SELECT 1
                   FROM store_filter sf
-                  JOIN filter f ON f.id = sf.filter_id
+                  JOIN `filter` f ON f.id = sf.filter_id
                   WHERE sf.store_id = s.id
                     AND f.category = 'TYPE'
                     AND f.code = :type
@@ -68,7 +69,7 @@ public interface StoreMapRepository extends JpaRepository<Store, Long> {
         String getRoadAddress();
         String getLotAddress();
         String getOpenTime();
-        String getNotOpen();
+        Weekday getNotOpen();
         Long getDistanceKey();
         Double getDistanceMeters();
     }
@@ -108,7 +109,7 @@ public interface StoreMapRepository extends JpaRepository<Store, Long> {
                   :type IS NULL OR EXISTS (
                     SELECT 1
                     FROM store_filter sf
-                    JOIN filter f ON f.id = sf.filter_id
+                    JOIN `filter` f ON f.id = sf.filter_id
                     WHERE sf.store_id = s.id
                       AND f.category = 'TYPE'
                       AND f.code = :type

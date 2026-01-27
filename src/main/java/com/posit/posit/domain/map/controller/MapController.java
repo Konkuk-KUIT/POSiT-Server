@@ -22,7 +22,7 @@ public class MapController {
 
     @GetMapping("/stores/markers")
     public ApiResponse<MapStoreMarkerResponse> markers(@Valid MapStoreMarkerQuery query) {
-        return ApiResponse.success(mapService.getMarkers(query);
+        return ApiResponse.success(mapService.getMarkers(query));
     }
 
     @GetMapping("/stores")

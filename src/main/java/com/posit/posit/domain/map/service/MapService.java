@@ -1,11 +1,13 @@
 package com.posit.posit.domain.map.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.posit.posit.domain.map.dto.request.MapStoreListQuery;
 import com.posit.posit.domain.map.dto.request.MapStoreMarkerQuery;
 import com.posit.posit.domain.map.dto.response.MapStoreListResponse;
 import com.posit.posit.domain.map.dto.response.MapStoreMarkerResponse;
-import com.posit.posit.domain.store.repository.StoreRepository;
+import com.posit.posit.domain.store.repository.StoreMapRepository;
+import com.posit.posit.domain.store.service.StoreOpenCalculator;
 import com.posit.posit.global.response.Meta;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,79 +16,106 @@ import org.springframework.util.StringUtils;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class MapService {
 
-    private final int DEFAULT_MARKER_LIMIT = 200;
-    private final int DEFAULT_LIST_LIMIT = 20;
+    private static final int DEFAULT_MARKER_LIMIT = 200;
+    private static final int DEFAULT_LIST_LIMIT = 20;
 
-    private final StoreRepository storeRepository;
+    private final StoreMapRepository storeMapRepository;
+    private final ObjectMapper objectMapper;
+
+    /**
+     * 지도 마커 조회 (가벼운 응답)
+     */
     public MapStoreMarkerResponse getMarkers(MapStoreMarkerQuery query) {
         int limit = (query.limit() == null) ? DEFAULT_MARKER_LIMIT : query.limit();
 
-        List<MapStoreMarkerResponse.MarkerStore> stores =
-                storeRepository.findMarkers(
+        List<MapStoreMarkerResponse.MarkerStore> stores = storeMapRepository
+                .findMarkers(
                         query.swLat(), query.swLng(), query.neLat(), query.neLng(),
                         emptyToNull(query.keyword()), emptyToNull(query.type()),
                         limit
-                );
+                )
+                .stream()
+                .map(p -> new MapStoreMarkerResponse.MarkerStore(
+                        p.getStoreId(),
+                        p.getName(),
+                        p.getLat().doubleValue(),
+                        p.getLng().doubleValue()
+                ))
+                .toList();
+
         return new MapStoreMarkerResponse(stores);
     }
 
     /**
-     * 지도 하단 리스트 조회 (거리순 + 커서 페이징)
+     * 지도 하단 리스트 조회 (거리순 only + 커서 페이징)
      */
     public ListResult getList(MapStoreListQuery query) {
         int limit = (query.limit() == null) ? DEFAULT_LIST_LIMIT : query.limit();
 
         CursorPayload cursor = decodeCursorIfPresent(query.cursor());
+        Long cursorDistanceKey = (cursor == null) ? null : cursor.lastDistanceKey();
+        Long cursorStoreId = (cursor == null) ? null : cursor.lastStoreId();
 
         // limit+1로 조회해서 hasNext 판단
         int fetchSize = limit + 1;
 
-        List<MapStoreQueryRepository.ListRow> rows =
-                mapStoreQueryRepository.findList(
-                        query.swLat(), query.swLng(), query.neLat(), query.neLng(),
-                        query.myLat(), query.myLng(),
-                        emptyToNull(query.keyword()), emptyToNull(query.type()),
-                        cursor,
-                        fetchSize
-                );
+        List<StoreMapRepository.StoreListRowProjection> rows = storeMapRepository.findMapStoreList(
+                query.swLat(), query.swLng(), query.neLat(), query.neLng(),
+                query.myLat(), query.myLng(),
+                emptyToNull(query.keyword()), emptyToNull(query.type()),
+                cursorDistanceKey, cursorStoreId,
+                fetchSize
+        );
 
         boolean hasNext = rows.size() > limit;
         if (hasNext) {
             rows = rows.subList(0, limit);
         }
 
-        // storeId 목록
-        List<Long> storeIds = rows.stream().map(MapStoreQueryRepository.ListRow::storeId).toList();
-
-        // 대표 이미지(1장)만 가져오기: sort_order가 가장 작은 1개
-        // (마커에는 이미지가 필요 없으므로 list에서만 수행)
-        var thumbMap = mapStoreQueryRepository.findPrimaryThumbnails(storeIds);
-
-        // statusCode 계산은 DB가 아니라 store 컬럼(open_time/not_open) 기반으로 서비스에서 계산
-        // → rows에 openTime, notOpen이 포함되어 있다고 가정하고 여기서 계산
+        // 대표 썸네일 1장(sort_order = 1)
+        List<Long> storeIds = rows.stream().map(StoreMapRepository.StoreListRowProjection::getStoreId).toList();
+        Map<Long, StoreMapRepository.StorePrimaryThumbnailProjection> thumbMap = storeIds.isEmpty()
+                ? Map.of()
+                : storeMapRepository.findPrimaryThumbnails(storeIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        StoreMapRepository.StorePrimaryThumbnailProjection::getStoreId,
+                        p -> p,
+                        (a, b) -> a
+                ));
 
         List<MapStoreListResponse.StoreItem> items = rows.stream().map(r -> {
-            String statusCode = StoreOpenStatusCalculator.calculateStatusCode(
-                    r.openTime(), r.notOpen()
+            String statusCode = StoreOpenCalculator.calculateStatusCode(
+                    r.getOpenTime(),
+                    r.getNotOpen()
             );
 
-            var primary = thumbMap.get(r.storeId());
+            // 리스트에서는 address 한 줄만 내려줌 (도로명 | 지번)
+            String address = buildSingleAddress(r.getRoadAddress(), r.getLotAddress());
+
+            var primary = thumbMap.get(r.getStoreId());
             List<MapStoreListResponse.ImageItem> images = (primary == null)
                     ? List.of()
-                    : List.of(new MapStoreListResponse.ImageItem(primary.imageId(), primary.thumbnailUrl(), primary.sortOrder()));
+                    : List.of(new MapStoreListResponse.ImageItem(
+                            primary.getImageId(),
+                            primary.getThumbnailUrl(),
+                            primary.getSortOrder()
+                    ));
 
             return new MapStoreListResponse.StoreItem(
-                    r.storeId(),
-                    r.name(),
-                    r.address(),
-                    r.lat(),
-                    r.lng(),
-                    r.description(),
+                    r.getStoreId(),
+                    r.getName(),
+                    address,
+                    r.getLat().doubleValue(),
+                    r.getLng().doubleValue(),
+                    r.getDescription(),
                     statusCode,
                     images
             );
@@ -98,10 +127,10 @@ public class MapService {
         String nextCursor = null;
         if (hasNext && !rows.isEmpty()) {
             var last = rows.get(rows.size() - 1);
-            nextCursor = encodeCursor(new CursorPayload(last.distanceKey(), last.storeId()));
+            nextCursor = encodeCursor(new CursorPayload(last.getDistanceKey(), last.getStoreId()));
         }
 
-        Meta meta = new Meta(nextCursor, hasNext);
+        Meta meta = new Meta("DISTANCE", nextCursor, hasNext);
         return new ListResult(data, meta);
     }
 
@@ -115,7 +144,7 @@ public class MapService {
      * - distanceKey: FLOOR(distanceMeters) 같은 정수화된 거리 값(미터)
      * - storeId: 동률 tie-breaker
      */
-    public record CursorPayload(long lastDistanceKey, long lastStoreId) {}
+    public record CursorPayload(Long lastDistanceKey, Long lastStoreId) {}
 
     private CursorPayload decodeCursorIfPresent(String cursor) {
         if (!StringUtils.hasText(cursor)) return null;
@@ -140,5 +169,15 @@ public class MapService {
 
     private static String emptyToNull(String s) {
         return (s == null || s.isBlank()) ? null : s;
+    }
+
+    private static String buildSingleAddress(String roadAddress, String lotAddress) {
+        boolean hasRoad = StringUtils.hasText(roadAddress);
+        boolean hasLot = StringUtils.hasText(lotAddress);
+
+        if (hasRoad && hasLot) return roadAddress + " | " + lotAddress;
+        if (hasRoad) return roadAddress;
+        if (hasLot) return lotAddress;
+        return "";
     }
 }
