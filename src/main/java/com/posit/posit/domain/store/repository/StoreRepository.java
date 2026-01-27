@@ -21,4 +21,5 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from Store s where s.businessNumber = :businessNumber and s.owner is null")
     Optional<Store> findUnassignedByBusinessNumberForUpdate(@Param("businessNumber") String businessNumber);
+
 }
