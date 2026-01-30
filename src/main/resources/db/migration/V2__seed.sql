@@ -39,8 +39,9 @@ INSERT INTO store (
     coupon_pin_hash,
     business_number
 ) VALUES (
-             NULL,                                  -- owner_id (회원가입 시 매핑 예정)
+             NULL,                            -- owner_id (회원가입 시 매핑 예정)
              '데모 카페',                           -- name
+             '02-1234-5678',
              '사장님 회원가입 테스트용 매장입니다', -- description
              'CAFE',                                -- category
              '09:00-22:00',                         -- open_time
