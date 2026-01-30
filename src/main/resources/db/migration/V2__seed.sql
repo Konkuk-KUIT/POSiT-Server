@@ -27,6 +27,7 @@ INSERT INTO phone_verification (
 INSERT INTO store (
     owner_id,
     name,
+    phone,
     description,
     category,
     open_time,
@@ -39,18 +40,18 @@ INSERT INTO store (
     coupon_pin_hash,
     business_number
 ) VALUES (
-             NULL,                            -- owner_id (회원가입 시 매핑 예정)
+             NULL,                                  -- owner_id (회원가입 시 매핑 예정)
              '데모 카페',                           -- name
-             '02-1234-5678',
+             '02-1234-5678',                        -- phone
              '사장님 회원가입 테스트용 매장입니다', -- description
              'CAFE',                                -- category
              '09:00-22:00',                         -- open_time
-             'SUN',                                 -- not_open (임의)
-             37.5665350,                            -- latitude (서울 시청 근처)
+             'SUN',                                 -- not_open
+             37.5665350,                            -- latitude
              126.9779692,                           -- longitude
              '서울특별시 중구 세종대로 110',         -- road_address
              '서울특별시 중구 태평로1가',            -- lot_address
              'https://instagram.com/demo_cafe',     -- sns_link
-             NULL,                                  -- coupon_pin_hash (아직 없음)
-             '1234567890'                           -- business_number (회원가입 시 입력할 값)
+             NULL,                                  -- coupon_pin_hash
+             '1234567890'                           -- business_number
          );
