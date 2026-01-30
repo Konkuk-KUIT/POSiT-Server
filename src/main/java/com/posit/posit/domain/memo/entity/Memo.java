@@ -65,4 +65,9 @@ public class Memo {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "concern_id", foreignKey = @ForeignKey(name = "fk_memo_concern"))
     private Concern concern;
+
+    // 상태 변경 편의 메서드 (채택/거절 시 사용)
+    public void updateStatus(MemoStatus status) {
+        this.status = status;
+    }
 }

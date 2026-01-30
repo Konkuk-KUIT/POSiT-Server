@@ -35,6 +35,9 @@ public class Store {
     @Column(name = "name", length = 20, nullable = false)
     private String name;
 
+    @Column(name = "phone", length = 15, nullable = false)
+    private String phone;
+
     @Column(name = "description", length = 50, nullable = false)
     private String description;
 
@@ -125,4 +128,5 @@ public class Store {
         this.owner = owner;
         this.couponPinHash = couponPinHash;
     }
+
 }
