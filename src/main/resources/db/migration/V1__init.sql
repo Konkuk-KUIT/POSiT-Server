@@ -38,6 +38,7 @@ CREATE TABLE store (
                        id BIGINT NOT NULL AUTO_INCREMENT,
                        owner_id BIGINT NULL,
                        name VARCHAR(20) NOT NULL,
+                       phone VARCHAR(15) NOT NULL,
                        description VARCHAR(50) NOT NULL,
                        category ENUM('CAFE','RESTAURANT') NOT NULL DEFAULT 'CAFE',
                        open_time VARCHAR(20) NOT NULL COMMENT '"HH:mm-HH:mm"',

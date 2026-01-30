@@ -66,4 +66,21 @@ public class IssuedCoupon {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private IssuedCouponStatus status;
+
+    // 쿠폰 사용 처리 메서드
+    public void use() {
+        // 1. 이미 사용한 경우
+        if (this.status == IssuedCouponStatus.USED) {
+            throw new IllegalStateException("이미 사용된 쿠폰입니다.");
+        }
+
+        // 2. 만료된 경우 (현재 시간이 만료일보다 뒤라면)
+        if (LocalDateTime.now().isAfter(this.expiredAt)) { // 혹은 status == EXPIRED
+            throw new IllegalStateException("유효기간이 만료된 쿠폰입니다.");
+        }
+
+        // 3. 상태 변경
+        this.status = IssuedCouponStatus.USED;
+        this.usedAt = LocalDateTime.now();
+    }
 }

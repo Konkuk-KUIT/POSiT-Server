@@ -74,6 +74,8 @@ public class User {
         this.updatedAt = LocalDateTime.now();
     }
 
+
+
     @PreUpdate
     void setUpdatedAt() {
         this.updatedAt = LocalDateTime.now();
@@ -101,4 +103,6 @@ public class User {
         user.status = UserStatus.ACTIVE;
         return user;
     }
+
+
 }
