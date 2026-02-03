@@ -44,4 +44,10 @@ public class Concern {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "template_id", nullable = false, foreignKey = @ForeignKey(name = "fk_concern_template"))
     private CouponTemplate template;
+
+
+    public void update(String content, CouponTemplate template) {
+        this.content = content;
+        this.template = template;
+    }
 }

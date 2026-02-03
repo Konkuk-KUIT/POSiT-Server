@@ -1,5 +1,6 @@
 package com.posit.posit.domain.user.entity;
 
+import com.posit.posit.domain.store.entity.Store;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -62,6 +63,13 @@ public class User {
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private OwnerProfile ownerProfile;
 
+    @OneToOne(mappedBy = "owner", fetch = FetchType.LAZY)
+    private Store store;
+
+    public Store getStore() { // Lombok @Getter가 있으면 생략 가능
+        return store;
+    }
+
     public void attachOwnerProfile(OwnerProfile profile) {
         this.ownerProfile = profile;
         profile.setUser(this);
@@ -104,5 +112,11 @@ public class User {
         return user;
     }
 
+    public void updateProfile(String name, String phone, LocalDate birth, Gender gender) {
+        this.name = name;
+        this.phone = phone;
+        this.birth = birth;
+        this.gender = gender;
+    }
 
 }

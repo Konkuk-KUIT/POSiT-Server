@@ -129,4 +129,8 @@ public class Store {
         this.couponPinHash = couponPinHash;
     }
 
+    public void updateCouponPin(String encodedPin) {
+        this.couponPinHash = encodedPin;
+    }
+
 }

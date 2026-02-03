@@ -1,6 +1,8 @@
 package com.posit.posit.domain.store.service;
 
+import com.posit.posit.domain.coupon.dto.request.CouponTemplateUpdateRequest;
 import com.posit.posit.domain.coupon.dto.request.CouponUseRequest;
+import com.posit.posit.domain.coupon.dto.response.CouponTemplateUpdateResponse;
 import com.posit.posit.domain.coupon.entity.CouponTemplate;
 import com.posit.posit.domain.coupon.entity.IssuedCoupon;
 import com.posit.posit.domain.coupon.entity.IssuedCouponStatus;
@@ -12,11 +14,8 @@ import com.posit.posit.domain.memo.entity.Memo;
 import com.posit.posit.domain.memo.entity.MemoStatus;
 import com.posit.posit.domain.memo.repository.DecisionRepository;
 import com.posit.posit.domain.store.dto.request.*;
-import com.posit.posit.domain.store.dto.response.CouponTemplateResponse;
+import com.posit.posit.domain.store.dto.response.*;
 import com.posit.posit.domain.concern.entity.Concern;
-import com.posit.posit.domain.store.dto.response.InboxMemoResponse;
-import com.posit.posit.domain.store.dto.response.InboxResponse;
-import com.posit.posit.domain.store.dto.response.OwnerHomeResponse;
 import com.posit.posit.domain.store.entity.*;
 import com.posit.posit.domain.store.repository.*;
 import com.posit.posit.domain.user.entity.OwnerProfile;
@@ -268,7 +267,7 @@ public class OwnerService {
         long newMemo = memoRepository.countByStoreIdAndStatus(storeId, MemoStatus.REVIEWING);
 
         // (4) 쿠폰 발행 수
-        long issuedCoupon = issuedCouponRepository.countByStoreId(storeId);
+        long totalCount = issuedCouponRepository.countByUserId(userId);
 
 // (1) 최신 고민글 3개 가져오기
         List<Concern> recentConcerns = concernRepository.findTop3ByStoreIdOrderByCreatedAtDesc(storeId);
@@ -294,7 +293,7 @@ public class OwnerService {
                 .newMemoCount(newMemo)
                 .stats(OwnerHomeResponse.HomeStats.builder() // 통계
                         .totalMemoCount(totalMemo)
-                        .issuedCouponCount(issuedCoupon)
+                        .issuedCouponCount(totalCount)
                         .adoptedCount(adoptedMemo)
                         .build())
                 .myConcerns(myConcernList) // 리스트 추가
@@ -427,5 +426,162 @@ public class OwnerService {
         }
 
         return store.getId();
+    }
+
+
+    // 가게 PIN 번호 수정
+    @Transactional
+    public void updateStorePin(Long userId, Long storeId, StorePinUpdateRequest request) {
+
+        // 1. 가게 조회
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 가게입니다."));
+
+        // 2. 권한 검증 (내 가게가 맞는지?)
+        if (!store.getOwner().getId().equals(userId)) {
+            throw new IllegalArgumentException("본인의 가게 정보만 수정할 수 있습니다.");
+        }
+
+        // 3. 비밀번호 암호화
+        String encodedPin = passwordEncoder.encode(request.getPin());
+
+        // 4. 변경 사항 반영 (Dirty Checking)
+        store.updateCouponPin(encodedPin);
+    }
+
+    // 고민 수정
+    @Transactional
+    public ConcernUpdateResponse updateConcern(Long userId, Long concernId, ConcernUpdateRequest request) {
+
+        // 1. 고민 조회
+        Concern concern = concernRepository.findById(concernId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 고민입니다."));
+
+        // 2. 권한 검증 (내 가게의 고민이 맞는지?)
+        if (!concern.getStore().getOwner().getId().equals(userId)) {
+            throw new IllegalArgumentException("본인의 고민만 수정할 수 있습니다.");
+        }
+
+        // 3. 템플릿 조회 (변경될 수 있으므로 다시 조회)
+        CouponTemplate template = couponTemplateRepository.findById(request.getTemplateId())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 쿠폰 템플릿입니다."));
+
+        // 4. 업데이트 실행 (Dirty Checking)
+        concern.update(request.getConcernContent(), template);
+
+        // 5. 응답 반환
+        return ConcernUpdateResponse.from(concern);
+    }
+
+    // 고민 상세 조회
+    @Transactional(readOnly = true)
+    public ConcernDetailResponse getConcernDetail(Long userId, Long concernId) {
+
+        // 1. 고민 조회
+        Concern concern = concernRepository.findById(concernId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 고민입니다."));
+
+        // 2. 권한 검증 (내 가게의 고민인지 확인)
+        // 사장님이 자기 글만 볼 수 있다면 필수, 누구나 볼 수 있다면 제거 가능
+//        if (!concern.getStore().getOwner().getId().equals(userId)) {
+//            throw new IllegalArgumentException("본인의 고민만 조회할 수 있습니다.");
+//        }
+
+        // 3. DTO 변환 및 반환
+        return ConcernDetailResponse.from(concern);
+    }
+
+    // 11. 쿠폰 템플릿 수정
+    @Transactional
+    public CouponTemplateUpdateResponse updateCouponTemplate(Long userId, Long templateId, CouponTemplateUpdateRequest request) {
+
+        // 1. 템플릿 조회
+        CouponTemplate template = couponTemplateRepository.findById(templateId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 쿠폰 템플릿입니다."));
+//
+//        // 2. 권한 검증 (내 가게의 템플릿인지?)
+//        if (!template.getStore().getOwner().getId().equals(userId)) {
+//            throw new IllegalArgumentException("본인의 템플릿만 수정할 수 있습니다.");
+//        }
+
+        // 3. 내용 수정 (Dirty Checking)
+        template.update(
+                request.getTitle(),
+                request.getCondition(),
+                request.getImage(),
+                request.getValidDays()
+        );
+
+        // 4. 응답 반환
+        return CouponTemplateUpdateResponse.from(template);
+    }
+
+    // 12. 메모 상세 조회
+    @Transactional(readOnly = true)
+    public MemoDetailResponse getMemoDetail(Long userId, Long memoId) { // type 제거!
+
+        // 1. 메모 조회
+        Memo memo = memoRepository.findById(memoId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 메모입니다."));
+
+        // 2. 권한 검증
+        if (!memo.getStore().getOwner().getId().equals(userId)) {
+            throw new IllegalArgumentException("해당 메모를 조회할 권한이 없습니다.");
+        }
+
+
+        // 4. DTO 변환
+        return MemoDetailResponse.from(memo);
+    }
+
+    // 13. 쿠폰 관리 (통계 + 목록)
+    @Transactional(readOnly = true)
+    public CouponManagementResponse getCouponManagement(Long userId, Long cursorId, int size) {
+
+        // 1. 통계 계산 (Repository 메서드명이 ByUserId로 변경됨)
+        long totalCount = issuedCouponRepository.countByUserId(userId);
+        long usedCount = issuedCouponRepository.countByUserIdAndStatus(userId, IssuedCouponStatus.USED);
+        long unusedCount = totalCount - usedCount;
+
+        CouponManagementResponse.CouponSummary summary = CouponManagementResponse.CouponSummary.builder()
+                .totalIssuedCount(totalCount)
+                .usedCount(usedCount)
+                .unusedCount(unusedCount)
+                .build();
+
+        // 2. 목록 조회 (Cursor Pagination)
+        // size + 1개를 가져와서 다음 페이지 존재 여부 확인
+        Pageable pageRequest = PageRequest.of(0, size + 1);
+
+        List<IssuedCoupon> coupons;
+        if (cursorId == null) {
+            // 첫 페이지
+            coupons = issuedCouponRepository.findAllByUserIdOrderByIdDesc(userId, pageRequest);
+        } else {
+            // 다음 페이지 (커서 사용)
+            coupons = issuedCouponRepository.findAllByUserIdAndIdLessThanOrderByIdDesc(userId, cursorId, pageRequest);
+        }
+
+        // 3. 다음 커서 및 hasNext 처리
+        boolean hasNext = false;
+        Long nextCursorId = null;
+
+        if (coupons.size() > size) {
+            hasNext = true;
+            coupons.remove(size); // 확인용으로 가져온 +1개 제거
+            nextCursorId = coupons.get(coupons.size() - 1).getId(); // 마지막 아이템 ID가 다음 커서
+        }
+
+        // 4. DTO 변환
+        List<CouponManagementResponse.CouponItem> couponItems = coupons.stream()
+                .map(CouponManagementResponse.CouponItem::from)
+                .toList();
+
+        return CouponManagementResponse.builder()
+                .summary(summary)
+                .items(couponItems)
+                .nextCursorId(nextCursorId)
+                .hasNext(hasNext)
+                .build();
     }
 }
