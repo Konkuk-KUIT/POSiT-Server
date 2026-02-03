@@ -41,4 +41,12 @@ public class CouponTemplate {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by_user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_coupon_template_creator"))
     private User createdBy;
+
+    // 템플릿 수정 메서드
+    public void update(String title, String description, String image, int validDays) {
+        this.title = title;
+        this.description = description; //
+        this.image = image;
+        this.validDays = validDays;
+    }
 }

@@ -70,4 +70,21 @@ public class Memo {
     public void updateStatus(MemoStatus status) {
         this.status = status;
     }
+
+    public void update(String title, String content, String imageUrl, FreeType freeType) {
+        if (title != null) {
+            this.title = title;
+        }
+        if (content != null) {
+            this.content = content;
+        }
+        if (imageUrl != null) {
+            this.image = imageUrl; // 엔티티 필드명은 image라고 가정
+        }
+
+        // freeType은 메모 타입이 'FREE'일 때만 수정 가능하도록 방어 로직 추가
+        if (this.memoType == MemoType.FREE && freeType != null) {
+            this.freeType = freeType;
+        }
+    }
 }

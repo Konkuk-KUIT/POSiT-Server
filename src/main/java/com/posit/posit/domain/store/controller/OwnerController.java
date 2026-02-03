@@ -1,10 +1,10 @@
 package com.posit.posit.domain.store.controller;
 
+import com.posit.posit.domain.coupon.dto.request.CouponTemplateUpdateRequest;
 import com.posit.posit.domain.coupon.dto.request.CouponUseRequest;
+import com.posit.posit.domain.coupon.dto.response.CouponTemplateUpdateResponse;
 import com.posit.posit.domain.store.dto.request.*;
-import com.posit.posit.domain.store.dto.response.CouponTemplateResponse;
-import com.posit.posit.domain.store.dto.response.InboxResponse;
-import com.posit.posit.domain.store.dto.response.OwnerHomeResponse;
+import com.posit.posit.domain.store.dto.response.*;
 import com.posit.posit.domain.store.service.OwnerService;
 import com.posit.posit.domain.user.dto.UserPrincipal;
 import com.posit.posit.global.response.ApiResponse;
@@ -121,5 +121,72 @@ public class OwnerController {
     ) {
         Long storeId = ownerService.registerStore(user.getId(), request);
         return ResponseEntity.ok(ApiResponse.success(storeId)); // storeId 반환 (또는 성공 메시지)
+    }
+
+    // 고민 수정
+    // PATCH /concerns/{concernId}
+    @PatchMapping("/concerns/{concernId}")
+    public ResponseEntity<?> updateConcern(
+            @AuthenticationPrincipal UserPrincipal user,
+            @PathVariable Long concernId,
+            @RequestBody @Valid ConcernUpdateRequest request
+    ) {
+        ConcernUpdateResponse response = ownerService.updateConcern(user.getId(), concernId, request);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    // 고민 상세 조회
+    // GET /concerns/{concernId}
+    @GetMapping("/concerns/{concernId}")
+    public ResponseEntity<?> getConcernDetail(
+            @AuthenticationPrincipal UserPrincipal user,
+            @PathVariable Long concernId
+    ) {
+        ConcernDetailResponse response = ownerService.getConcernDetail(user.getId(), concernId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+
+    // 11. 쿠폰 템플릿 수정
+    // PATCH /coupon-templates/{templateId}
+    @PatchMapping("/coupon-templates/{templateId}")
+    public ResponseEntity<?> updateCouponTemplate(
+            @AuthenticationPrincipal UserPrincipal user,
+            @PathVariable Long templateId,
+            @RequestBody @Valid CouponTemplateUpdateRequest request
+    ) {
+        CouponTemplateUpdateResponse response = ownerService.updateCouponTemplate(user.getId(), templateId, request);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    // 12. 메모 상세 조회
+    // GET /memos/{memoId}?type=ANSWER
+    @GetMapping("/memos/{memoId}")
+    public ResponseEntity<?> getMemoDetail(
+            @AuthenticationPrincipal UserPrincipal user,
+            @PathVariable Long memoId,
+            @RequestParam(required = false) String type // 검증용 (필수 아님)
+    ) {
+        MemoDetailResponse response = ownerService.getMemoDetail(user.getId(), memoId);
+
+        // (선택 사항) 요청한 type과 실제 DB type이 다르면 에러 뱉기
+        if (type != null && !response.getMemoType().equals(type)) {
+            throw new IllegalArgumentException("요청하신 메모 타입과 실제 메모 타입이 일치하지 않습니다.");
+        }
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    // 13. 쿠폰 관리 (통계 + 목록)
+    // GET /owner/coupon-management?size=10&cursorId=123
+    @GetMapping("/owner/coupon-management")
+    public ResponseEntity<?> getCouponManagement(
+            @AuthenticationPrincipal UserPrincipal user,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Long cursorId
+    ) {
+        CouponManagementResponse response = ownerService.getCouponManagement(user.getId(), cursorId, size);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
