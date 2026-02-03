@@ -49,6 +49,10 @@ public enum SwaggerErrorSet {
             PHONE_VERIFICATION_CODE_MISMATCH
     )),
 
+    MAP_DETAIL(setOf(
+        STORE_NOT_FOUND
+    )),
+
     DEFAULT(setOf());
 
     private final Set<ErrorCode> codes;
