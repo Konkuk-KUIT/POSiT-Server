@@ -44,6 +44,7 @@ public class MapService {
     /**
      * 지도 마커 조회 (가벼운 응답)
      */
+    @Transactional
     public MapStoreMarkerResponse getMarkers(MapStoreMarkerQuery query) {
         int limit = (query.limit() == null) ? DEFAULT_MARKER_LIMIT : query.limit();
 
@@ -68,6 +69,7 @@ public class MapService {
     /**
      * 지도 하단 리스트 조회 (거리순 only + 커서 페이징)
      */
+    @Transactional(readOnly = true)
     public ListResult getList(MapStoreListQuery query) {
         int limit = (query.limit() == null) ? DEFAULT_LIST_LIMIT : query.limit();
 
@@ -193,7 +195,7 @@ public class MapService {
         return "";
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public MapStoreDetailResponse getDetail(Long storeId) {
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
