@@ -6,17 +6,17 @@ INSERT INTO users (
     login_id,
     password,
     name,
-    phone_number,
+    phone,
     gender,
     birth,
     created_at,
-    modified_at
+    updated_at
 ) VALUES (
-             'USER',                                                                   -- 역할: 일반 유저
-             'test_user',                                                              -- 아이디
-             '$2a$10$8.UnVuG9HHgffUDAlk8qfOpFte2uTb.X.gij.w.s5x.x5x.x5x',              -- 비밀번호: password123
+             'GUEST',
+             'test_user',
+             '$2a$10$8.UnVuG9HHgffUDAlk8qfOpFte2uTb.X.gij.w.s5x.x5x.x5x', -- password123
              '테스트손님',
-             '010-9999-9999',
+             '01099999999',
              'MALE',
              '2000-01-01',
              NOW(),
