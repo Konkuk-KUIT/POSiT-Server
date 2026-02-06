@@ -1,7 +1,9 @@
 package com.posit.posit.global.config;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,10 +13,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class S3Config {
 
-    @Value("${cloud.aws.credentials.access-key}")
+    @Value("${cloud.aws.credentials.access-key:}")
     private String accessKey;
 
-    @Value("${cloud.aws.credentials.secret-key}")
+    @Value("${cloud.aws.credentials.secret-key:}")
     private String secretKey;
 
     @Value("${cloud.aws.region.static}")
@@ -22,11 +24,20 @@ public class S3Config {
 
     @Bean
     public AmazonS3 amazonS3() {
-        BasicAWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
+        AWSCredentialsProvider provider;
+
+        if (accessKey != null && !accessKey.isBlank()
+                && secretKey != null && !secretKey.isBlank()
+                && !"unused".equalsIgnoreCase(accessKey)
+                && !"unused".equalsIgnoreCase(secretKey)) {
+            provider = new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey));
+        } else {
+            provider = DefaultAWSCredentialsProviderChain.getInstance();
+        }
 
         return AmazonS3ClientBuilder.standard()
                 .withRegion(region)
-                .withCredentials(new AWSStaticCredentialsProvider(credentials))
+                .withCredentials(provider)
                 .build();
     }
 }
