@@ -32,10 +32,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
-        System.out.println("path = " + path);
+//        System.out.println("path = " + path);
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) return true;
 
         return path.startsWith("/swagger-ui")
+                || path.startsWith("/auth")
                 || path.startsWith("/v3/api-docs")
                 || path.startsWith("/actuator/health")
                 || path.startsWith("/error");
@@ -82,7 +83,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (auth == null || !auth.startsWith("Bearer ")) {
             return null;
         }
-        return auth.substring(7);
+        String token = auth.substring(7);
+        if (token == null || token.isBlank()) {
+            return null;
+        }
+        return token;
     }
 
     private void writeErrorResponse(HttpServletResponse response, ErrorCode errorCode) throws IOException {
