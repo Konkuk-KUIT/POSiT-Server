@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table (
@@ -65,10 +66,6 @@ public class User {
 
     @OneToOne(mappedBy = "owner", fetch = FetchType.LAZY)
     private Store store;
-
-    public Store getStore() { // Lombok @Getter가 있으면 생략 가능
-        return store;
-    }
 
     public void attachOwnerProfile(OwnerProfile profile) {
         this.ownerProfile = profile;

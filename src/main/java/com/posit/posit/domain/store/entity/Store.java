@@ -28,17 +28,17 @@ public class Store {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @OneToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "owner_id", nullable = true, foreignKey = @ForeignKey(name = "fk_store_owner"))
     private User owner;
 
-    @Column(name = "name", length = 20, nullable = false)
+    @Column(name = "name", length = 30, nullable = false)
     private String name;
 
     @Column(name = "phone", length = 15, nullable = false)
     private String phone;
 
-    @Column(name = "description", length = 50, nullable = false)
+    @Column(name = "description", length = 255, nullable = false)
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -58,10 +58,10 @@ public class Store {
     @Column(name = "longitude", precision = 10, scale = 7, nullable = false)
     private java.math.BigDecimal longitude;
 
-    @Column(name = "road_address", length = 30, nullable = false)
+    @Column(name = "road_address", length = 255, nullable = false)
     private String roadAddress;
 
-    @Column(name = "lot_address", length = 30)
+    @Column(name = "lot_address", length = 255)
     private String lotAddress;
 
     @Column(name = "sns_link", length = 255)
