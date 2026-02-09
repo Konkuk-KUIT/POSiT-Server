@@ -23,7 +23,7 @@ public class CouponController {
     // 보유 쿠폰 목록 조회
     // GET /coupons?status=ISSUED&size=20&cursor=105
     @GetMapping("/coupons")
-    public ResponseEntity<ApiResponse<MyCouponListResponse>> getMyCoupons(
+    public ResponseEntity<?> getMyCoupons(
             @AuthenticationPrincipal UserPrincipal user,
             @RequestParam IssuedCouponStatus status, // 필수 파라미터
             @RequestParam(defaultValue = "20") int size,
