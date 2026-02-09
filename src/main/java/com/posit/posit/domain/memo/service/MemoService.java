@@ -5,18 +5,26 @@ import com.posit.posit.domain.memo.dto.request.MemoCreateRequest;
 import com.posit.posit.domain.memo.dto.request.MemoUpdateRequest;
 import com.posit.posit.domain.memo.dto.response.MemoCreateResponse;
 import com.posit.posit.domain.memo.dto.response.MemoUpdateResponse;
+import com.posit.posit.domain.memo.dto.response.MyMemoDetailResponse;
+import com.posit.posit.domain.memo.dto.response.MyMemoListResponse;
+import com.posit.posit.domain.memo.entity.Decision;
 import com.posit.posit.domain.memo.entity.Memo;
 import com.posit.posit.domain.memo.entity.MemoStatus;
 import com.posit.posit.domain.memo.entity.MemoType;
+import com.posit.posit.domain.memo.repository.DecisionRepository;
 import com.posit.posit.domain.store.entity.Store;
-import com.posit.posit.domain.store.repository.MemoRepository;
+import com.posit.posit.domain.memo.repository.MemoRepository;
 import com.posit.posit.domain.store.repository.StoreRepository;
 import com.posit.posit.domain.user.entity.User;
 import com.posit.posit.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -112,5 +120,89 @@ public class MemoService {
 
         // 4. 응답 반환 (Transactional 덕분에 자동 저장됨)
         return MemoUpdateResponse.from(memo);
+    }
+
+    @Transactional(readOnly = true)
+    public MyMemoListResponse getMyMemos(Long userId, MemoType type, MemoStatus status, Long cursorId, int size) {
+
+        Pageable pageable = PageRequest.of(0, size);
+        List<Memo> memos = memoRepository.findAllMyMemos(userId, type, status, cursorId, pageable);
+
+        Long nextCursorId = null;
+        boolean hasNext = false;
+
+        // 사이즈만큼 꽉 차서 왔다면 다음 페이지가 있을 확률이 높음 (간단한 처리)
+        if (!memos.isEmpty() && memos.size() == size) {
+            nextCursorId = memos.get(memos.size() - 1).getId();
+            hasNext = true;
+        }
+
+        List<MyMemoListResponse.MyMemoItem> items = memos.stream()
+                .map(memo -> MyMemoListResponse.MyMemoItem.builder()
+                        .memoId(memo.getId())
+                        .storeName(memo.getStore().getName())
+                        .category(getCategoryName(memo.getMemoType())) // 한글 변환
+                        .content(getPreview(memo.getContent())) // 미리보기 삽입
+                        .status(memo.getStatus().name())
+                        .createdAt(memo.getCreatedAt().toLocalDate().toString())
+                        .isRead(false) // DB 컬럼 부재로 false 고정
+                        .build())
+                .collect(Collectors.toList());
+
+        return MyMemoListResponse.builder()
+                .memos(items)
+                .nextCursorId(nextCursorId)
+                .hasNext(hasNext)
+                .build();
+    }
+
+    private String getCategoryName(MemoType type) {
+        if (type == MemoType.ANSWER) return "고민 답변";
+        if (type == MemoType.FREE) return "자유 메모";
+        return "기타";
+    }
+
+    // 미리보기 만들기 (30글자 넘으면 자르고 ... 붙이기)
+    private String getPreview(String content) {
+        if (content == null) return ""; // 내용 없으면 빈칸
+        if (content.length() > 30) {    // 30글자보다 길면?
+            return content.substring(0, 30) + "..."; // 0부터 30번째까지만 자르고 ... 붙임
+        }
+        return content; // 짧으면 그냥 그대로 리턴
+    }
+
+    private final DecisionRepository decisionRepository;
+
+    @Transactional(readOnly = true)
+    public MyMemoDetailResponse getMemoDetail(Long userId, Long memoId) {
+        // 1. 메모 조회 (내 아이디와 일치하는지 확인)
+        Memo memo = memoRepository.findByIdAndUser_Id(memoId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("메모를 찾을 수 없습니다."));
+
+        // 2. 사장님 고민 내용 가져오기 (고민 답변인 경우)
+        String concernContent = null;
+        if (memo.getConcern() != null) {
+            concernContent = memo.getConcern().getContent();
+        }
+
+        // 3. 사장님 답글(Decision) 가져오기
+        String ownerReply = null;
+        Optional<Decision> decision = decisionRepository.findByMemoId(memoId);
+        if (decision.isPresent() && decision.get().getMessage() != null) {
+            ownerReply = decision.get().getMessage();
+        }
+
+        // 4. DTO 변환
+        return MyMemoDetailResponse.builder()
+                .memoId(memo.getId())
+                .storeId(memo.getStore().getId())
+                .storeName(memo.getStore().getName())
+                .concernContent(concernContent)
+                .memoTitle(memo.getTitle())       // 제목 매핑
+                .memoContent(memo.getContent())   // 내용 매핑
+                .ownerReply(ownerReply)           // 답글 매핑
+                .status(memo.getStatus().name())
+                .createdAt(memo.getCreatedAt().toString()) // 포맷팅 필요시 수정 (예: yyyy-MM-dd HH:mm)
+                .build();
     }
 }

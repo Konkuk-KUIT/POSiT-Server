@@ -79,4 +79,6 @@ public interface IssuedCouponRepository extends JpaRepository<IssuedCoupon, Long
             @Param("couponId") Long couponId,
             @Param("userId") Long userId
     );
+
+    Optional<IssuedCoupon> findByIdAndUser_Id(Long id, Long userId);
 }

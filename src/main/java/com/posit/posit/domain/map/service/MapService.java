@@ -7,6 +7,7 @@ import com.posit.posit.domain.map.dto.request.MapStoreMarkerQuery;
 import com.posit.posit.domain.map.dto.response.MapStoreDetailResponse;
 import com.posit.posit.domain.map.dto.response.MapStoreListResponse;
 import com.posit.posit.domain.map.dto.response.MapStoreMarkerResponse;
+import com.posit.posit.domain.memo.repository.MemoRepository;
 import com.posit.posit.domain.store.entity.Store;
 import com.posit.posit.domain.store.repository.*;
 import com.posit.posit.domain.store.service.StoreOpenCalculator;

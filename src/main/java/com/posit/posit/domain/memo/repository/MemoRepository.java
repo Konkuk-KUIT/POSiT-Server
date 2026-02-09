@@ -1,13 +1,15 @@
-package com.posit.posit.domain.store.repository;
+package com.posit.posit.domain.memo.repository;
 
 import com.posit.posit.domain.memo.entity.Memo;
 import com.posit.posit.domain.memo.entity.MemoStatus;
+import com.posit.posit.domain.memo.entity.MemoType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param; // [중요] 이거 import 필수!
 
 import java.util.List;
+import java.util.Optional;
 
 public interface MemoRepository extends JpaRepository<Memo, Long> {
 
@@ -52,4 +54,21 @@ public interface MemoRepository extends JpaRepository<Memo, Long> {
     long countByStoreIdAndStatus(Long storeId, MemoStatus status);
     //특정 고민글에 달린 메모 개수 세기
     long countByConcernId(Long concernId);
+
+    // 동적 쿼리: type이나 status가 null이면 조건 무시
+    @Query("SELECT m FROM Memo m JOIN FETCH m.store " +
+            "WHERE m.user.id = :userId " +
+            "AND (:memoType IS NULL OR m.memoType = :memoType) " +
+            "AND (:status IS NULL OR m.status = :status) " +
+            "AND (:cursorId IS NULL OR m.id < :cursorId) " +
+            "ORDER BY m.id DESC")
+    List<Memo> findAllMyMemos(
+            @Param("userId") Long userId,
+            @Param("memoType") MemoType memoType,
+            @Param("status") MemoStatus status,
+            @Param("cursorId") Long cursorId,
+            Pageable pageable
+    );
+
+    Optional<Memo> findByIdAndUser_Id(Long id, Long userId);
 }

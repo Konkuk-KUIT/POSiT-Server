@@ -13,6 +13,7 @@ import com.posit.posit.domain.memo.entity.DecisionType;
 import com.posit.posit.domain.memo.entity.Memo;
 import com.posit.posit.domain.memo.entity.MemoStatus;
 import com.posit.posit.domain.memo.repository.DecisionRepository;
+import com.posit.posit.domain.memo.repository.MemoRepository;
 import com.posit.posit.domain.store.dto.request.*;
 import com.posit.posit.domain.store.dto.response.*;
 import com.posit.posit.domain.concern.entity.Concern;
@@ -29,7 +30,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;

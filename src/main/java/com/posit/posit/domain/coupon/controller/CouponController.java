@@ -1,5 +1,7 @@
 package com.posit.posit.domain.coupon.controller;
 
+import com.posit.posit.domain.coupon.dto.request.CouponRedeemRequest;
+import com.posit.posit.domain.coupon.dto.response.CouponRedeemResponse;
 import com.posit.posit.domain.coupon.dto.response.MyCouponDetailResponse;
 import com.posit.posit.domain.coupon.dto.response.MyCouponListResponse;
 import com.posit.posit.domain.coupon.entity.IssuedCouponStatus;
@@ -8,14 +10,11 @@ import com.posit.posit.domain.user.dto.UserPrincipal;
 import com.posit.posit.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Coupon API", description = "쿠폰 관련 API") // 1. API 그룹 이름표
 @RestController
@@ -48,6 +47,17 @@ public class CouponController {
             @PathVariable Long couponId
     ) {
         MyCouponDetailResponse response = couponService.getCouponDetail(user.getId(), couponId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(summary = "쿠폰 사용하기", description = "가게에서 PIN 번호를 입력받아 쿠폰을 사용 처리합니다.")
+    @PostMapping("/{couponId}/redeem")
+    public ResponseEntity<ApiResponse<CouponRedeemResponse>> redeemCoupon(
+            @AuthenticationPrincipal UserPrincipal user,
+            @PathVariable Long couponId,
+            @RequestBody @Valid CouponRedeemRequest request
+    ) {
+        CouponRedeemResponse response = couponService.redeemCoupon(user.getId(), couponId, request.couponPin());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
