@@ -1,6 +1,7 @@
 package com.posit.posit.global.security.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.posit.posit.domain.user.dto.UserPrincipal;
 import com.posit.posit.global.error.ErrorCode;
 import com.posit.posit.global.error.ErrorResponse;
 import com.posit.posit.global.jwt.JwtUtil;
@@ -66,8 +67,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             List<SimpleGrantedAuthority> authorities =
                     List.of(new SimpleGrantedAuthority("ROLE_" + role));
 
+            UserPrincipal principal = new UserPrincipal(
+                    userId,
+                    String.valueOf(userId),
+                    "N/A",
+                    authorities
+            );
+
             UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(userId, null, authorities);
+                    new UsernamePasswordAuthenticationToken(principal, null, authorities);
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
             filterChain.doFilter(request, response);
