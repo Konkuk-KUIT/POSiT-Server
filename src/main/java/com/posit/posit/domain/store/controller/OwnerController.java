@@ -8,6 +8,8 @@ import com.posit.posit.domain.store.dto.response.*;
 import com.posit.posit.domain.store.service.OwnerService;
 import com.posit.posit.domain.user.dto.UserPrincipal;
 import com.posit.posit.global.response.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Owner API", description = "사장님 전용 API (가게, 고민, 쿠폰 관리 등)") // 1. API 그룹 이름표
 @RestController
 @RequiredArgsConstructor
 public class OwnerController {
@@ -23,9 +26,10 @@ public class OwnerController {
     private final OwnerService ownerService;
 
     // 1. 쿠폰 템플릿 등록
+    @Operation(summary = "쿠폰 템플릿 등록", description = "사장님이 발급할 쿠폰의 템플릿(종류)을 등록합니다.")
     @PostMapping("/coupons")
-    public ResponseEntity<?> createCouponTemplate(
-            @AuthenticationPrincipal com.posit.posit.domain.user.dto.UserPrincipal user, // 로그인한 사장님 정보
+    public ResponseEntity<ApiResponse<Long>> createCouponTemplate(
+            @AuthenticationPrincipal UserPrincipal user, // 로그인한 사장님 정보
             @RequestBody @Valid CouponTemplateCreateRequest request
     ) {
         // user.getId()를 넘김
@@ -34,8 +38,9 @@ public class OwnerController {
     }
 
     // 2. 쿠폰 템플릿 목록 조회
+    @Operation(summary = "쿠폰 템플릿 목록 조회", description = "내가 만든 쿠폰 템플릿 목록을 조회합니다.")
     @GetMapping("/owner/coupon-templates")
-    public ResponseEntity<?> getCouponTemplates(
+    public ResponseEntity<ApiResponse<List<CouponTemplateResponse>>> getCouponTemplates(
             @AuthenticationPrincipal UserPrincipal user
     ) {
         // 내(사장님)가 만든 템플릿만 조회
@@ -44,8 +49,9 @@ public class OwnerController {
     }
 
     // 3. 고민 등록
+    @Operation(summary = "고민 등록", description = "가게에 대한 고민글을 작성합니다.")
     @PostMapping("/stores/{storeId}/concerns")
-    public ResponseEntity<?> createConcern(
+    public ResponseEntity<ApiResponse<Long>> createConcern(
             @PathVariable Long storeId,
             @AuthenticationPrincipal UserPrincipal user,
             @RequestBody @Valid ConcernCreateRequest request
@@ -58,8 +64,9 @@ public class OwnerController {
 
     // 4. 수신함 목록 조회
     // GET /owner/inbox?storeId=1&tab=ANSWER&cursorId=100&limit=10
+    @Operation(summary = "수신함 목록 조회", description = "답변이 달린 고민이나, 쿠폰 사용 알림 등을 조회합니다.")
     @GetMapping("/owner/inbox")
-    public ResponseEntity<?> getInbox(
+    public ResponseEntity<ApiResponse<InboxResponse>> getInbox(
             @AuthenticationPrincipal UserPrincipal user,
             @RequestParam Long storeId,
             @RequestParam(defaultValue = "ANSWER") String tab, // 기본값: 고민 답변 탭
@@ -71,8 +78,9 @@ public class OwnerController {
     }
 
     // 5-1. 답변 채택
+    @Operation(summary = "답변 채택", description = "마음에 드는 답변(메모)을 채택하고 쿠폰을 발급합니다.")
     @PostMapping("/memos/{memoId}/adopt")
-    public ResponseEntity<?> adoptMemo(
+    public ResponseEntity<ApiResponse<String>> adoptMemo(
             @AuthenticationPrincipal UserPrincipal user,
             @PathVariable Long memoId,
             @RequestBody @Valid MemoAdoptRequest request
@@ -82,8 +90,9 @@ public class OwnerController {
     }
 
     // 5-2. 답변 거절
+    @Operation(summary = "답변 거절", description = "마음에 들지 않는 답변(메모)을 거절 처리합니다.")
     @PostMapping("/memos/{memoId}/reject")
-    public ResponseEntity<?> rejectMemo(
+    public ResponseEntity<ApiResponse<String>> rejectMemo(
             @AuthenticationPrincipal UserPrincipal user,
             @PathVariable Long memoId,
             @RequestBody @Valid MemoRejectRequest request
@@ -93,8 +102,9 @@ public class OwnerController {
     }
 
     // 6. 사장님 홈 화면 (대시보드)
+    @Operation(summary = "사장님 홈 화면 (대시보드)", description = "사장님 메인 화면에 필요한 정보들을 조회합니다.")
     @GetMapping("/owner/home")
-    public ResponseEntity<?> getOwnerHome(
+    public ResponseEntity<ApiResponse<OwnerHomeResponse>> getOwnerHome(
             @AuthenticationPrincipal UserPrincipal user,
             @RequestParam Long storeId
     ) {
@@ -103,8 +113,9 @@ public class OwnerController {
     }
 
     // 7. 쿠폰 사용 하기 (POST)
+    @Operation(summary = "쿠폰 사용 처리", description = "손님이 제시한 쿠폰을 사용 처리합니다.")
     @PostMapping("/coupons/{couponId}/use")
-    public ResponseEntity<?> useCoupon(
+    public ResponseEntity<ApiResponse<String>> useCoupon(
             @AuthenticationPrincipal UserPrincipal user,
             @PathVariable Long couponId,
             @RequestBody @Valid CouponUseRequest request // Body로 비밀번호 받기
@@ -114,8 +125,9 @@ public class OwnerController {
     }
 
     // 0. 가게 등록
+    @Operation(summary = "가게 등록", description = "사장님의 가게 정보를 등록합니다.")
     @PostMapping("/stores")
-    public ResponseEntity<?> registerStore(
+    public ResponseEntity<ApiResponse<Long>> registerStore(
             @AuthenticationPrincipal UserPrincipal user,
             @RequestBody @Valid StoreRegisterRequest request
     ) {
@@ -125,8 +137,9 @@ public class OwnerController {
 
     // 고민 수정
     // PATCH /concerns/{concernId}
+    @Operation(summary = "고민 수정", description = "작성한 고민 내용을 수정합니다.")
     @PatchMapping("/concerns/{concernId}")
-    public ResponseEntity<?> updateConcern(
+    public ResponseEntity<ApiResponse<ConcernUpdateResponse>> updateConcern(
             @AuthenticationPrincipal UserPrincipal user,
             @PathVariable Long concernId,
             @RequestBody @Valid ConcernUpdateRequest request
@@ -137,8 +150,9 @@ public class OwnerController {
 
     // 고민 상세 조회
     // GET /concerns/{concernId}
+    @Operation(summary = "고민 상세 조회", description = "특정 고민의 상세 내용을 조회합니다.")
     @GetMapping("/concerns/{concernId}")
-    public ResponseEntity<?> getConcernDetail(
+    public ResponseEntity<ApiResponse<ConcernDetailResponse>> getConcernDetail(
             @AuthenticationPrincipal UserPrincipal user,
             @PathVariable Long concernId
     ) {
@@ -149,8 +163,9 @@ public class OwnerController {
 
     // 11. 쿠폰 템플릿 수정
     // PATCH /coupon-templates/{templateId}
+    @Operation(summary = "쿠폰 템플릿 수정", description = "등록된 쿠폰 템플릿 정보를 수정합니다.")
     @PatchMapping("/coupon-templates/{templateId}")
-    public ResponseEntity<?> updateCouponTemplate(
+    public ResponseEntity<ApiResponse<CouponTemplateUpdateResponse>> updateCouponTemplate(
             @AuthenticationPrincipal UserPrincipal user,
             @PathVariable Long templateId,
             @RequestBody @Valid CouponTemplateUpdateRequest request
@@ -161,8 +176,9 @@ public class OwnerController {
 
     // 12. 메모 상세 조회
     // GET /memos/{memoId}?type=ANSWER
+    @Operation(summary = "메모 상세 조회", description = "특정 메모(답변)의 상세 내용을 조회합니다.")
     @GetMapping("/memos/{memoId}")
-    public ResponseEntity<?> getMemoDetail(
+    public ResponseEntity<ApiResponse<MemoDetailResponse>> getMemoDetail(
             @AuthenticationPrincipal UserPrincipal user,
             @PathVariable Long memoId,
             @RequestParam(required = false) String type // 검증용 (필수 아님)
@@ -179,8 +195,9 @@ public class OwnerController {
 
     // 13. 쿠폰 관리 (통계 + 목록)
     // GET /owner/coupon-management?size=10&cursorId=123
+    @Operation(summary = "쿠폰 관리 (통계 + 목록)", description = "발급된 쿠폰들의 통계와 목록을 관리합니다.")
     @GetMapping("/owner/coupon-management")
-    public ResponseEntity<?> getCouponManagement(
+    public ResponseEntity<ApiResponse<CouponManagementResponse>> getCouponManagement(
             @AuthenticationPrincipal UserPrincipal user,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Long cursorId
