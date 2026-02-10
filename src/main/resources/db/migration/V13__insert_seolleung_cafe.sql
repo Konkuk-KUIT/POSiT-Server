@@ -109,7 +109,7 @@ SET @PW := '$2a$10$T0kcl6QQcMc5oDMdOYvIRecSCH179zPaLY57Y/uEhQoOy93U8qyRO';
 -- owner7
 INSERT INTO users (role, login_id, password, name, phone, gender, birth, created_at, updated_at)
 SELECT 'OWNER', 'owner7', @PW, '온나사장', '01077777777', 'FEMALE', '1993-07-07', NOW(), NOW()
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE login_id='owner7');
+    WHERE NOT EXISTS (SELECT 1 FROM users WHERE login_id='owner7');
 INSERT INTO owner_profile (user_id, business_number)
 SELECT id, '1000000007' FROM users WHERE login_id='owner7';
 UPDATE store SET owner_id = (SELECT id FROM users WHERE login_id='owner7') WHERE business_number='1000000007';
@@ -117,7 +117,7 @@ UPDATE store SET owner_id = (SELECT id FROM users WHERE login_id='owner7') WHERE
 -- owner8
 INSERT INTO users (role, login_id, password, name, phone, gender, birth, created_at, updated_at)
 SELECT 'OWNER', 'owner8', @PW, '알렉사장', '01088888888', 'MALE', '1991-08-08', NOW(), NOW()
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE login_id='owner8');
+    WHERE NOT EXISTS (SELECT 1 FROM users WHERE login_id='owner8');
 INSERT INTO owner_profile (user_id, business_number)
 SELECT id, '1000000008' FROM users WHERE login_id='owner8';
 UPDATE store SET owner_id = (SELECT id FROM users WHERE login_id='owner8') WHERE business_number='1000000008';
@@ -125,7 +125,7 @@ UPDATE store SET owner_id = (SELECT id FROM users WHERE login_id='owner8') WHERE
 -- owner9
 INSERT INTO users (role, login_id, password, name, phone, gender, birth, created_at, updated_at)
 SELECT 'OWNER', 'owner9', @PW, 'AS사장', '01099999998', 'MALE', '1990-09-09', NOW(), NOW()
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE login_id='owner9');
+    WHERE NOT EXISTS (SELECT 1 FROM users WHERE login_id='owner9');
 INSERT INTO owner_profile (user_id, business_number)
 SELECT id, '1000000009' FROM users WHERE login_id='owner9';
 UPDATE store SET owner_id = (SELECT id FROM users WHERE login_id='owner9') WHERE business_number='1000000009';
@@ -133,7 +133,7 @@ UPDATE store SET owner_id = (SELECT id FROM users WHERE login_id='owner9') WHERE
 -- owner10
 INSERT INTO users (role, login_id, password, name, phone, gender, birth, created_at, updated_at)
 SELECT 'OWNER', 'owner10', @PW, '언노운사장', '01010101010', 'FEMALE', '1994-10-10', NOW(), NOW()
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE login_id='owner10');
+    WHERE NOT EXISTS (SELECT 1 FROM users WHERE login_id='owner10');
 INSERT INTO owner_profile (user_id, business_number)
 SELECT id, '1000000010' FROM users WHERE login_id='owner10';
 UPDATE store SET owner_id = (SELECT id FROM users WHERE login_id='owner10') WHERE business_number='1000000010';
@@ -141,7 +141,7 @@ UPDATE store SET owner_id = (SELECT id FROM users WHERE login_id='owner10') WHER
 -- owner11
 INSERT INTO users (role, login_id, password, name, phone, gender, birth, created_at, updated_at)
 SELECT 'OWNER', 'owner11', @PW, '텟어텟사장', '01011111112', 'FEMALE', '1992-11-11', NOW(), NOW()
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE login_id='owner11');
+    WHERE NOT EXISTS (SELECT 1 FROM users WHERE login_id='owner11');
 INSERT INTO owner_profile (user_id, business_number)
 SELECT id, '1000000011' FROM users WHERE login_id='owner11';
 UPDATE store SET owner_id = (SELECT id FROM users WHERE login_id='owner11') WHERE business_number='1000000011';
@@ -149,7 +149,7 @@ UPDATE store SET owner_id = (SELECT id FROM users WHERE login_id='owner11') WHER
 -- owner12
 INSERT INTO users (role, login_id, password, name, phone, gender, birth, created_at, updated_at)
 SELECT 'OWNER', 'owner12', @PW, '레이어사장', '01012121212', 'MALE', '1995-12-12', NOW(), NOW()
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE login_id='owner12');
+    WHERE NOT EXISTS (SELECT 1 FROM users WHERE login_id='owner12');
 INSERT INTO owner_profile (user_id, business_number)
 SELECT id, '1000000012' FROM users WHERE login_id='owner12';
 UPDATE store SET owner_id = (SELECT id FROM users WHERE login_id='owner12') WHERE business_number='1000000012';
@@ -160,9 +160,9 @@ UPDATE store SET owner_id = (SELECT id FROM users WHERE login_id='owner12') WHER
 
 -- insert convince (UI chips)
 INSERT INTO convince (display_name, code) VALUES
-  ('간편결제', 'EASY_PAY')
-ON DUPLICATE KEY UPDATE
-  display_name = VALUES(display_name);
+    ('간편결제', 'EASY_PAY')
+    ON DUPLICATE KEY UPDATE
+                         display_name = VALUES(display_name);
 
 
 -- -----------------------------------------------------------------------------
@@ -214,94 +214,94 @@ WHERE c.code IN ('GROUP_SEAT','DELIVERY','TAKEOUT','WIFI','RESERVATION','ACCESSI
 INSERT INTO menu (store_id, name, price, sort_order, image, type)
 SELECT s.id, '금빛소금커피', 5200, 1, NULL, 'MAIN'
 FROM store s WHERE s.business_number='1000000007'
-AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=1);
+               AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=1);
 
 INSERT INTO menu (store_id, name, price, sort_order, image, type)
 SELECT s.id, '아메리카노', 1700, 2, NULL, 'MAIN'
 FROM store s WHERE s.business_number='1000000007'
-AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=2);
+               AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=2);
 
 INSERT INTO menu (store_id, name, price, sort_order, image, type)
 SELECT s.id, '온.나 크림라떼', 4900, 3, NULL, 'MAIN'
 FROM store s WHERE s.business_number='1000000007'
-AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=3);
+               AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=3);
 
 -- store 8
 INSERT INTO menu (store_id, name, price, sort_order, image, type)
 SELECT s.id, '오늘의 커피', 4500, 1, NULL, 'MAIN'
 FROM store s WHERE s.business_number='1000000008'
-AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=1);
+               AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=1);
 
 INSERT INTO menu (store_id, name, price, sort_order, image, type)
 SELECT s.id, '롱블랙', 4500, 2, NULL, 'MAIN'
 FROM store s WHERE s.business_number='1000000008'
-AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=2);
+               AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=2);
 
 INSERT INTO menu (store_id, name, price, sort_order, image, type)
 SELECT s.id, '코르타도', 4800, 3, NULL, 'MAIN'
 FROM store s WHERE s.business_number='1000000008'
-AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=3);
+               AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=3);
 
 -- store 9
 INSERT INTO menu (store_id, name, price, sort_order, image, type)
 SELECT s.id, 'AS 시그니쳐 라떼', 3700, 1, NULL, 'MAIN'
 FROM store s WHERE s.business_number='1000000009'
-AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=1);
+               AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=1);
 
 INSERT INTO menu (store_id, name, price, sort_order, image, type)
 SELECT s.id, '헛개리카노', 3100, 2, NULL, 'MAIN'
 FROM store s WHERE s.business_number='1000000009'
-AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=2);
+               AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=2);
 
 INSERT INTO menu (store_id, name, price, sort_order, image, type)
 SELECT s.id, '윈터 시그니쳐 뱅쇼', 4300, 3, NULL, 'MAIN'
 FROM store s WHERE s.business_number='1000000009'
-AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=3);
+               AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=3);
 
 -- store 10
 INSERT INTO menu (store_id, name, price, sort_order, image, type)
 SELECT s.id, '딥바닐라빈라떼', 5000, 1, NULL, 'MAIN'
 FROM store s WHERE s.business_number='1000000010'
-AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=1);
+               AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=1);
 
 INSERT INTO menu (store_id, name, price, sort_order, image, type)
 SELECT s.id, '아인슈페너', 5300, 2, NULL, 'MAIN'
 FROM store s WHERE s.business_number='1000000010'
-AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=2);
+               AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=2);
 
 INSERT INTO menu (store_id, name, price, sort_order, image, type)
 SELECT s.id, '아몬드슈페너', 6000, 3, NULL, 'MAIN'
 FROM store s WHERE s.business_number='1000000010'
-AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=3);
+               AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=3);
 
 -- store 11
 INSERT INTO menu (store_id, name, price, sort_order, image, type)
 SELECT s.id, 'TAT 크림라떼', 6800, 1, NULL, 'MAIN'
 FROM store s WHERE s.business_number='1000000011'
-AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=1);
+               AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=1);
 
 INSERT INTO menu (store_id, name, price, sort_order, image, type)
 SELECT s.id, '복숭아 자두 에이드', 6000, 2, NULL, 'MAIN'
 FROM store s WHERE s.business_number='1000000011'
-AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=2);
+               AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=2);
 
 INSERT INTO menu (store_id, name, price, sort_order, image, type)
 SELECT s.id, '팥크림 쑥 라떼', 6500, 3, NULL, 'MAIN'
 FROM store s WHERE s.business_number='1000000011'
-AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=3);
+               AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=3);
 
 -- store 12
 INSERT INTO menu (store_id, name, price, sort_order, image, type)
 SELECT s.id, '바닐라아메리카노', 5500, 1, NULL, 'MAIN'
 FROM store s WHERE s.business_number='1000000012'
-AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=1);
+               AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=1);
 
 INSERT INTO menu (store_id, name, price, sort_order, image, type)
 SELECT s.id, '바닐라라떼', 6300, 2, NULL, 'MAIN'
 FROM store s WHERE s.business_number='1000000012'
-AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=2);
+               AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=2);
 
 INSERT INTO menu (store_id, name, price, sort_order, image, type)
 SELECT s.id, '헤이즐럿라떼', 6300, 3, NULL, 'MAIN'
 FROM store s WHERE s.business_number='1000000012'
-AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=3);
+               AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=3);
