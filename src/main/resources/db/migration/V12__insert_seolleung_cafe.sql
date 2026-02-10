@@ -1,11 +1,11 @@
 -- cafe 462 (store_id=4) 메뉴 이미지 누락 복구
 UPDATE menu
 SET image = 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/Cafe462Menu_1.jpeg'
-WHERE store_id = 4 AND sort_order = 1 AND (image IS NULL OR image = '');
+WHERE store_id = (SELECT id FROM store WHERE business_number='1000000004') AND sort_order = 1 AND (image IS NULL OR image = '');
 
 UPDATE menu
 SET image = 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/Cafe462Menu_2.jpeg'
-WHERE store_id = 4 AND sort_order = 2 AND (image IS NULL OR image = '');
+WHERE store_id = (SELECT id FROM store WHERE business_number='1000000004') AND sort_order = 2 AND (image IS NULL OR image = '');
 
 -- ===========================
 -- V12 : 선릉역 인근 카페 6개 추가
@@ -108,42 +108,48 @@ SET @PW := '$2a$10$T0kcl6QQcMc5oDMdOYvIRecSCH179zPaLY57Y/uEhQoOy93U8qyRO';
 
 -- owner7
 INSERT INTO users (role, login_id, password, name, phone, gender, birth, created_at, updated_at)
-VALUES ('OWNER', 'owner7', @PW, '온나사장', '01077777777', 'FEMALE', '1993-07-07', NOW(), NOW());
+SELECT 'OWNER', 'owner7', @PW, '온나사장', '01077777777', 'FEMALE', '1993-07-07', NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE login_id='owner7');
 INSERT INTO owner_profile (user_id, business_number)
 SELECT id, '1000000007' FROM users WHERE login_id='owner7';
 UPDATE store SET owner_id = (SELECT id FROM users WHERE login_id='owner7') WHERE business_number='1000000007';
 
 -- owner8
 INSERT INTO users (role, login_id, password, name, phone, gender, birth, created_at, updated_at)
-VALUES ('OWNER', 'owner8', @PW, '알렉사장', '01088888888', 'MALE', '1991-08-08', NOW(), NOW());
+SELECT 'OWNER', 'owner8', @PW, '알렉사장', '01088888888', 'MALE', '1991-08-08', NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE login_id='owner8');
 INSERT INTO owner_profile (user_id, business_number)
 SELECT id, '1000000008' FROM users WHERE login_id='owner8';
 UPDATE store SET owner_id = (SELECT id FROM users WHERE login_id='owner8') WHERE business_number='1000000008';
 
 -- owner9
 INSERT INTO users (role, login_id, password, name, phone, gender, birth, created_at, updated_at)
-VALUES ('OWNER', 'owner9', @PW, 'AS사장', '01099999998', 'MALE', '1990-09-09', NOW(), NOW());
+SELECT 'OWNER', 'owner9', @PW, 'AS사장', '01099999998', 'MALE', '1990-09-09', NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE login_id='owner9');
 INSERT INTO owner_profile (user_id, business_number)
 SELECT id, '1000000009' FROM users WHERE login_id='owner9';
 UPDATE store SET owner_id = (SELECT id FROM users WHERE login_id='owner9') WHERE business_number='1000000009';
 
 -- owner10
 INSERT INTO users (role, login_id, password, name, phone, gender, birth, created_at, updated_at)
-VALUES ('OWNER', 'owner10', @PW, '언노운사장', '01010101010', 'FEMALE', '1994-10-10', NOW(), NOW());
+SELECT 'OWNER', 'owner10', @PW, '언노운사장', '01010101010', 'FEMALE', '1994-10-10', NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE login_id='owner10');
 INSERT INTO owner_profile (user_id, business_number)
 SELECT id, '1000000010' FROM users WHERE login_id='owner10';
 UPDATE store SET owner_id = (SELECT id FROM users WHERE login_id='owner10') WHERE business_number='1000000010';
 
 -- owner11
 INSERT INTO users (role, login_id, password, name, phone, gender, birth, created_at, updated_at)
-VALUES ('OWNER', 'owner11', @PW, '텟어텟사장', '01011111112', 'FEMALE', '1992-11-11', NOW(), NOW());
+SELECT 'OWNER', 'owner11', @PW, '텟어텟사장', '01011111112', 'FEMALE', '1992-11-11', NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE login_id='owner11');
 INSERT INTO owner_profile (user_id, business_number)
 SELECT id, '1000000011' FROM users WHERE login_id='owner11';
 UPDATE store SET owner_id = (SELECT id FROM users WHERE login_id='owner11') WHERE business_number='1000000011';
 
 -- owner12
 INSERT INTO users (role, login_id, password, name, phone, gender, birth, created_at, updated_at)
-VALUES ('OWNER', 'owner12', @PW, '레이어사장', '01012121212', 'MALE', '1995-12-12', NOW(), NOW());
+SELECT 'OWNER', 'owner12', @PW, '레이어사장', '01012121212', 'MALE', '1995-12-12', NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE login_id='owner12');
 INSERT INTO owner_profile (user_id, business_number)
 SELECT id, '1000000012' FROM users WHERE login_id='owner12';
 UPDATE store SET owner_id = (SELECT id FROM users WHERE login_id='owner12') WHERE business_number='1000000012';
@@ -165,32 +171,32 @@ ON DUPLICATE KEY UPDATE
 
 -- Store 7: 포장, 배달, 간편결제
 INSERT IGNORE INTO store_convince (store_id, convince_id)
-SELECT 7, c.id FROM convince c
+SELECT (SELECT id FROM store WHERE business_number='1000000007'), c.id FROM convince c
 WHERE c.code IN ('TAKEOUT','DELIVERY','EASY_PAY');
 
 -- Store 8: 와이파이, 포장, 배달, 반려동물 동반
 INSERT IGNORE INTO store_convince (store_id, convince_id)
-SELECT 8, c.id FROM convince c
+SELECT (SELECT id FROM store WHERE business_number='1000000008'), c.id FROM convince c
 WHERE c.code IN ('WIFI','TAKEOUT','DELIVERY','PET_FRIENDLY');
 
 -- Store 9: 포장, 배달
 INSERT IGNORE INTO store_convince (store_id, convince_id)
-SELECT 9, c.id FROM convince c
+SELECT (SELECT id FROM store WHERE business_number='1000000009'), c.id FROM convince c
 WHERE c.code IN ('TAKEOUT','DELIVERY');
 
 -- Store 10: 포장, 와이파이, 반려동물 동반, 주차가능
 INSERT IGNORE INTO store_convince (store_id, convince_id)
-SELECT 10, c.id FROM convince c
+SELECT (SELECT id FROM store WHERE business_number='1000000010'), c.id FROM convince c
 WHERE c.code IN ('TAKEOUT','WIFI','PET_FRIENDLY','PARKING');
 
 -- Store 11: 단체석, 포장, 배달, 와이파이
 INSERT IGNORE INTO store_convince (store_id, convince_id)
-SELECT 11, c.id FROM convince c
+SELECT (SELECT id FROM store WHERE business_number='1000000011'), c.id FROM convince c
 WHERE c.code IN ('GROUP_SEAT','TAKEOUT','DELIVERY','WIFI');
 
 -- Store 12: 단체석, 배달, 포장, 와이파이, 예약 가능, 장애인 편의시설(=휠체어)
 INSERT IGNORE INTO store_convince (store_id, convince_id)
-SELECT 12, c.id FROM convince c
+SELECT (SELECT id FROM store WHERE business_number='1000000012'), c.id FROM convince c
 WHERE c.code IN ('GROUP_SEAT','DELIVERY','TAKEOUT','WIFI','RESERVATION','ACCESSIBLE');
 
 -- Optional sanity checks
