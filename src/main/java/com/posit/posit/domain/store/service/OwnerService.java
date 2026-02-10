@@ -425,6 +425,7 @@ public class OwnerService {
         // 7. 편의시설 저장
         if (request.getConvinces() != null) {
             for (String code : request.getConvinces()) {
+                // "string" 같은 없는 코드가 들어오면 에러
                 Convince convince = convinceRepository.findByCode(code)
                         .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 편의시설 코드입니다: " + code));
 
@@ -432,6 +433,8 @@ public class OwnerService {
                         .store(store)
                         .convince(convince)
                         .build();
+
+                storeConvinceRepository.save(storeConvince);
             }
         }
 
