@@ -7,7 +7,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Getter
@@ -31,7 +30,7 @@ public class StoreRegisterRequest {
     @NotBlank(message = "가게 소개는 필수입니다.")
     private String description;
 
-    // [중요] 직원 인증용 비밀번호 설정 (가입 시 설정)
+    // 직원 인증용 비밀번호
     @NotBlank(message = "직원 인증 비밀번호(4자리)를 설정해주세요.")
     private String couponPin;
 
@@ -40,26 +39,30 @@ public class StoreRegisterRequest {
     @NotNull
     private OperationDto operation;
 
-    private List<String> convinces; // ["TAKEOUT", "WIFI"]
+    private List<String> convinces;
 
     private List<MenuDto> menus;
 
+    // 👇 [수정됨] lat, lng 필드 삭제 & roadAddress 필수 체크 추가
     @Getter
     @NoArgsConstructor
     public static class AddressDto {
-        private String roadAddress;
-        private String detailAddress;
-        private BigDecimal lat;
-        private BigDecimal lng;
+        @NotBlank(message = "도로명 주소는 필수입니다.")
+        private String roadAddress;   // 지오코딩의 기준이 됨
+
+        private String detailAddress; // 상세 주소
+
+        // private BigDecimal lat;  <-- 삭제 (서버가 계산함)
+        // private BigDecimal lng;  <-- 삭제 (서버가 계산함)
     }
 
     @Getter
     @NoArgsConstructor
     public static class OperationDto {
-        private List<Weekday> regularHolidays; // ["MON", "TUE"]
+        private List<Weekday> regularHolidays;
         private List<Weekday> openDay;
-        private String openTime;  // "11:00"
-        private String closeTime; // "22:00"
+        private String openTime;
+        private String closeTime;
     }
 
     @Getter

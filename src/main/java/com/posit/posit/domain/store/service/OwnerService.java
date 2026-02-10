@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -337,6 +338,8 @@ public class OwnerService {
     private final MenuRepository menuRepository; // 추가
     private final StoreConvinceRepository storeConvinceRepository; // 추가
     private final OwnerProfileRepository ownerProfileRepository;
+    private final GeocodingService geocodingService;
+
     // 가게 등록
     @Transactional
     public Long registerStore(Long userId, StoreRegisterRequest request) {
@@ -345,7 +348,7 @@ public class OwnerService {
         User owner = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        // 2. 사장님 프로필에서 '사업자 번호' 가져오기 (Request에서 제거됨)
+        // 2. 사장님 프로필에서 '사업자 번호' 가져오기
         OwnerProfile profile = ownerProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사장님 프로필(사업자 정보)이 존재하지 않습니다. 먼저 사업자 인증을 진행해주세요."));
         String businessNumber = profile.getBusinessNumber();
@@ -354,7 +357,7 @@ public class OwnerService {
         // 영업시간 포맷팅 "10:00-22:00"
         String fullOpenTime = request.getOperation().getOpenTime() + "-" + request.getOperation().getCloseTime();
 
-        // 휴무일 (DB 단일 컬럼 한계로 첫 번째 값만 저장, 없으면 NULL)
+        // 휴무일
         Weekday notOpenDay = null;
         if (request.getOperation().getRegularHolidays() != null && !request.getOperation().getRegularHolidays().isEmpty()) {
             notOpenDay = request.getOperation().getRegularHolidays().get(0);
@@ -363,22 +366,30 @@ public class OwnerService {
         // 직원 확인 비밀번호 암호화
         String encodedPin = passwordEncoder.encode(request.getCouponPin());
 
+        // [변경] 도로명 주소로 좌표 구하기 (서버가 카카오 API 호출)
+        String roadAddr = request.getAddress().getRoadAddress();
+        GeocodingService.Coordinate coordinate = geocodingService.getCoordinate(roadAddr);
+
+
         // 4. Store 엔티티 생성 및 저장
         Store store = Store.builder()
                 .owner(owner)
                 .name(request.getName())
-                .phone(request.getPhone())        // [New] 전화번호
+                .phone(request.getPhone())
                 .description(request.getDescription())
                 .category(request.getType())
-                .businessNumber(businessNumber)   // [New] DB에서 조회한 값
-                .roadAddress(request.getAddress().getRoadAddress())
-                .lotAddress(request.getAddress().getDetailAddress()) // 상세주소 매핑
-                .latitude(request.getAddress().getLat())
-                .longitude(request.getAddress().getLng())
+                .businessNumber(businessNumber)
+                .roadAddress(roadAddr) // 도로명 주소
+                .lotAddress(request.getAddress().getDetailAddress()) // 상세 주소
+
+                // [변경] API로 찾아낸 좌표를 BigDecimal로 변환하여 저장
+                .latitude(BigDecimal.valueOf(coordinate.getLat()))
+                .longitude(BigDecimal.valueOf(coordinate.getLon()))
+
                 .openTime(fullOpenTime)
                 .notOpen(notOpenDay)
                 .snsLink(request.getSnsUrl())
-                .couponPinHash(encodedPin)        // [New] 암호화된 PIN
+                .couponPinHash(encodedPin)
                 .build();
 
         storeRepository.save(store);
@@ -405,7 +416,7 @@ public class OwnerService {
                         .name(menuDto.getName())
                         .price(menuDto.getPrice())
                         .image(menuDto.getImageUrl())
-                        .type(MenuType.MAIN) // Enum 필요 (없으면 생성)
+                        .type(MenuType.MAIN)
                         .build();
                 menuRepository.save(menu);
             }
@@ -421,13 +432,11 @@ public class OwnerService {
                         .store(store)
                         .convince(convince)
                         .build();
-                storeConvinceRepository.save(storeConvince);
             }
         }
 
         return store.getId();
     }
-
 
     // 가게 PIN 번호 수정
     @Transactional
