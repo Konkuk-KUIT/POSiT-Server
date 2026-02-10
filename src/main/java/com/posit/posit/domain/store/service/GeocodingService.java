@@ -1,6 +1,9 @@
 package com.posit.posit.domain.store.service;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -16,55 +19,47 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GeocodingService {
 
-    private final RestTemplate restTemplate = new RestTemplate(); // API 요청 도구
+    private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${kakao.api.key}") // yml에 적은 키 가져오기
+    @Value("${kakao.api.key}")
     private String apiKey;
 
-    @Value("${kakao.api.url}") // yml에 적은 URL 가져오기
+    @Value("${kakao.api.url}") // https://dapi.kakao.com/v2/local/search/address.json
     private String apiUrl;
 
-    // 주소 -> 좌표 변환 메서드
     public Coordinate getCoordinate(String address) {
         try {
-            // 1. 헤더에 키 담기 (신분증 제시)
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", "KakaoAK " + apiKey);
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
-            // 2. 요청 URL 만들기 (주소 포함)
-            String url = apiUrl + "?query=" + address;
+            String url = apiUrl + "?query={query}";
 
-            // 3. 카카오 서버에 요청 보내기
             ResponseEntity<KakaoGeoResponse> response = restTemplate.exchange(
                     url,
                     HttpMethod.GET,
                     entity,
-                    KakaoGeoResponse.class
+                    KakaoGeoResponse.class,
+                    address // {query} 자리에 주소가 들어감
             );
 
-            // 4. 응답 까보기 (결과가 있으면 좌표 리턴)
             if (response.getBody() != null && !response.getBody().getDocuments().isEmpty()) {
                 KakaoGeoResponse.Document doc = response.getBody().getDocuments().get(0);
-                // 카카오는 x가 경도(Lng), y가 위도(Lat)임!
                 return new Coordinate(
-                        Double.parseDouble(doc.getY()), // 위도 (Latitude)
-                        Double.parseDouble(doc.getX())  // 경도 (Longitude)
+                        Double.parseDouble(doc.getY()),
+                        Double.parseDouble(doc.getX())
                 );
             }
         } catch (Exception e) {
-            e.printStackTrace(); // 에러 나면 로그 찍기
+            e.printStackTrace(); // 에러 로그 확인용
         }
-
-        // 실패하면 기본값 (0.0) 리턴 (혹은 예외 던지기 선택 가능)
         return new Coordinate(0.0, 0.0);
     }
 
-    // 좌표 담을 통 (DTO)
     @Getter
     public static class Coordinate {
-        private final double lat; // 위도
-        private final double lon; // 경도
+        private final double lat;
+        private final double lon;
 
         public Coordinate(double lat, double lon) {
             this.lat = lat;
@@ -72,15 +67,18 @@ public class GeocodingService {
         }
     }
 
-    // 카카오 응답 받을 통 (내부 클래스)
-    @Getter
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     static class KakaoGeoResponse {
         private List<Document> documents;
 
-        @Getter
+        @Data
+        @NoArgsConstructor
+        @AllArgsConstructor
         static class Document {
-            private String x; // 경도 (Longitude)
-            private String y; // 위도 (Latitude)
+            private String x; // 경도
+            private String y; // 위도
         }
     }
 }
