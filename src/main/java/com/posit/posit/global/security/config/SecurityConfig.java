@@ -5,7 +5,6 @@ import com.posit.posit.global.jwt.JwtUtil;
 import com.posit.posit.global.security.filter.JwtAuthenticationFilter;
 import com.posit.posit.global.security.handler.RestAccessDeniedHandler;
 import com.posit.posit.global.security.handler.RestAuthenticationEntryPoint;
-import io.jsonwebtoken.security.Password;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +15,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.Collections;
 
 @Configuration
 @EnableWebSecurity
@@ -31,6 +36,9 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
+                // 👇 1. CORS 설정을 가장 먼저 추가해야 합니다!
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
                 .csrf(csrf -> csrf.disable())
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
@@ -42,24 +50,23 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler) //403
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // 공개 API (토큰 없이 접근 가능)
+                        // Preflight Request(OPTIONS)는 무조건 허용해줘야 함
+                        .requestMatchers(org.springframework.web.cors.CorsUtils::isPreFlightRequest).permitAll()
+
+                        // 공개 API
                         .requestMatchers(
                                 "/auth/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/actuator/health",
-                                "/api/ping"
+                                "/api/ping",
+                                "/stores" // 가게 등록은 열려있어야 함 (로그인 필요하면 제외)
                         ).permitAll()
-                        // 사장님 전용(대시보드/관리)
+                        // 사장님 전용
                         .requestMatchers("/owner/**").hasRole("OWNER")
-                        // 사장님만 가능한 액션
-                        .requestMatchers("/stores/*/concerns").hasRole("OWNER")
-                        .requestMatchers("/concerns/*").hasRole("OWNER")
-                        .requestMatchers("/memos/*/adopt", "/memos/*/reject").hasRole("OWNER")
+                        // ... 나머지 설정
                         .anyRequest().authenticated()
                 )
-
-                // 토큰이 있으면 인증 세팅, 토큰이 없으면 그냥 통과(권한 체크는 Security가 담당)
                 .addFilterBefore(
                         new JwtAuthenticationFilter(jwtUtil, objectMapper),
                         UsernamePasswordAuthenticationFilter.class
@@ -67,11 +74,38 @@ public class SecurityConfig {
 
         return http.build();
     }
-    //todo:@PreAuthorize("hasRole('OWNER')") 로 컨트롤러 단에서 권한 막기 (URL만으로 구분 어려운 memos/memoId는 둘다지만 수정은 게스트만)
+
+    // 👇 2. 허용할 도메인 설정 (여기 Vercel 주소 넣으세요!)
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        // 허용할 Origin 목록
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:3000",              // 로컬 프론트엔드
+                "https://kuit-6th-posit.vercel.app"  //  본인의 Vercel 배포 주소 (뒤에 슬래시 / 뺄것)
+
+        ));
+
+        // 허용할 HTTP 메서드
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+
+        // 허용할 헤더
+        configuration.setAllowedHeaders(Collections.singletonList("*"));
+
+        // 쿠키나 인증 정보 허용 (필수)
+        configuration.setAllowCredentials(true);
+
+        // 노출할 헤더 (프론트에서 Authorization 헤더 등을 읽어야 한다면 추가)
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Set-Cookie"));
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 }
-
