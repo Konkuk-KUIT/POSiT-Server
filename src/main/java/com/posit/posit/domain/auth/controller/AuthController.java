@@ -53,7 +53,7 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(@RequestBody LogoutRequest request) {
         authService.logout(request);
-        return ResponseEntity.ok(ApiResponse.success(null));
+        return ResponseEntity.ok(ApiResponse.success());
     }
 
     @Operation(summary = "로그인", description = "아이디/비밀번호로 로그인하고 토큰을 발급합니다.")
