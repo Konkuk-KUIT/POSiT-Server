@@ -1,5 +1,6 @@
 package com.posit.posit.domain.store.repository;
 
+import com.posit.posit.domain.store.entity.StoreCategory;
 import com.posit.posit.domain.store.entity.StoreFilter;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -16,4 +17,6 @@ public interface StoreFilterRepository extends JpaRepository<StoreFilter, Long> 
         order by f.id asc
     """)
     Optional<String> findFirstTypeCodeByStoreId(Long storeId);
+
+    Optional<String> findByCategoryAndCode(String type, StoreCategory category);
 }

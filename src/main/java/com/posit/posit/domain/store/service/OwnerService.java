@@ -23,6 +23,7 @@ import com.posit.posit.domain.user.entity.OwnerProfile;
 import com.posit.posit.domain.user.entity.User;
 import com.posit.posit.domain.user.repository.OwnerProfileRepository;
 import com.posit.posit.domain.user.repository.UserRepository;
+import org.springdoc.webmvc.core.service.RequestService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
@@ -45,6 +46,8 @@ public class OwnerService {
 
     private final CouponTemplateRepository couponTemplateRepository;
     private final UserRepository userRepository; // [변경] Store 대신 User 필요
+    private final RequestService requestBuilder;
+    private final StoreFilterRepository storeFilterRepository;
 
     // 1. 쿠폰 템플릿 생성
     @Transactional
@@ -368,7 +371,7 @@ public class OwnerService {
                 .name(request.getName())
                 .phone(request.getPhone())
                 .description(request.getDescription())
-                .category(request.getType())
+                .category(StoreType.CAFE)
                 .businessNumber(businessNumber)
                 .roadAddress(roadAddr) // 도로명 주소
                 .lotAddress(request.getAddress().getDetailAddress()) // 상세 주소
@@ -384,6 +387,13 @@ public class OwnerService {
                 .build();
 
         storeRepository.save(store);
+
+        // TYPE 필터 연결해서 저장
+        if(request.getType() != null && ) {
+            Filter typeFilter = storeFilterRepository
+                    .findByCategoryAndCode("TYPE", request.getType())
+                    .orEleseThrow
+        }
 
         // 5. 가게 이미지 저장
         if (request.getImageUrls() != null) {
