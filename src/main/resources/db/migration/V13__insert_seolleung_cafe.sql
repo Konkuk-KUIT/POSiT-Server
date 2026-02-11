@@ -10,6 +10,16 @@ WHERE store_id = (SELECT id FROM store WHERE business_number='1000000004') AND s
 -- ===========================
 -- V12 : 선릉역 인근 카페 6개 추가
 -- ===========================
+-- -----------------------------------------------------------------------------
+-- Resolve store ids by business_number (NO hardcoded store_id)
+-- -----------------------------------------------------------------------------
+SET @bn7  := '1000000007';
+SET @bn8  := '1000000008';
+SET @bn9  := '1000000009';
+SET @bn10 := '1000000010';
+SET @bn11 := '1000000011';
+SET @bn12 := '1000000012';
+
 -- 7. 카페온나 선릉점 (business_number=1000000007)
 INSERT INTO store (name, road_address, open_time, not_open, phone, description, category, latitude, longitude, sns_link, business_number)
 VALUES (
@@ -99,6 +109,22 @@ VALUES (
            '1000000012'
        );
 
+-- Resolve inserted store ids (must be AFTER store inserts)
+SET @s7  := (SELECT id FROM store WHERE business_number = @bn7);
+SET @s8  := (SELECT id FROM store WHERE business_number = @bn8);
+SET @s9  := (SELECT id FROM store WHERE business_number = @bn9);
+SET @s10 := (SELECT id FROM store WHERE business_number = @bn10);
+SET @s11 := (SELECT id FROM store WHERE business_number = @bn11);
+SET @s12 := (SELECT id FROM store WHERE business_number = @bn12);
+
+-- Safety check: if any is NULL, fail fast by forcing an error (division by zero)
+SELECT 1/(CASE WHEN @s7  IS NULL THEN 0 ELSE 1 END);
+SELECT 1/(CASE WHEN @s8  IS NULL THEN 0 ELSE 1 END);
+SELECT 1/(CASE WHEN @s9  IS NULL THEN 0 ELSE 1 END);
+SELECT 1/(CASE WHEN @s10 IS NULL THEN 0 ELSE 1 END);
+SELECT 1/(CASE WHEN @s11 IS NULL THEN 0 ELSE 1 END);
+SELECT 1/(CASE WHEN @s12 IS NULL THEN 0 ELSE 1 END);
+
 -- -----------------------------------------------------------------------------
 -- 더미 사장(owner7~owner12) 생성 + owner_profile + store.owner_id 연결
 -- -----------------------------------------------------------------------------
@@ -165,6 +191,44 @@ INSERT INTO convince (display_name, code) VALUES
                          display_name = VALUES(display_name);
 
 
+-- =============================================================================
+-- V12: TYPE filters + store_filter mapping (NO hardcoded store_id)
+-- =============================================================================
+
+-- Ensure TYPE filters exist (idempotent)
+INSERT INTO filter (category, code, display_name) VALUES
+  ('TYPE', 'STUDY',   '스터디 카페'),
+  ('TYPE', 'BRUNCH',  '브런치 카페'),
+  ('TYPE', 'DESSERT', '디저트 카페')
+ON DUPLICATE KEY UPDATE
+  display_name = VALUES(display_name);
+
+-- Map store -> TYPE filter (edit codes as needed)
+-- Store 7
+INSERT IGNORE INTO store_filter (store_id, filter_id)
+SELECT @s7, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
+
+-- Store 8
+INSERT IGNORE INTO store_filter (store_id, filter_id)
+SELECT @s8, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
+
+-- Store 9
+INSERT IGNORE INTO store_filter (store_id, filter_id)
+SELECT @s9, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
+
+-- Store 10
+INSERT IGNORE INTO store_filter (store_id, filter_id)
+SELECT @s10, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
+
+-- Store 11
+INSERT IGNORE INTO store_filter (store_id, filter_id)
+SELECT @s11, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
+
+-- Store 12
+INSERT IGNORE INTO store_filter (store_id, filter_id)
+SELECT @s12, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
+
+
 -- -----------------------------------------------------------------------------
 -- Store 7~12: options -> store_convince (중간테이블)
 -- -----------------------------------------------------------------------------
@@ -206,6 +270,128 @@ WHERE c.code IN ('GROUP_SEAT','DELIVERY','TAKEOUT','WIFI','RESERVATION','ACCESSI
 -- LEFT JOIN convince c ON c.id = sc.convince_id
 -- WHERE s.id BETWEEN 7 AND 12
 -- GROUP BY s.id, s.name;
+
+-- =============================================================================
+-- V12: Store images (store_image) + Menu images (menu.image)
+--  - You upload images to S3 first, then paste URLs below.
+--  - NO hardcoded store_id.
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- Store 7 images (store_image) 카페온나
+-- -----------------------------------------------------------------------------
+INSERT INTO store_image (store_id, image_url, thumbnail_url, sort_order)
+SELECT @s7, t.image_url, t.thumbnail_url, t.sort_order
+FROM (
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/CafeOnNA1.jpeg' AS image_url,
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/CafeOnNA1.jpeg' AS thumbnail_url,
+           1 AS sort_order
+    UNION ALL
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/CafeOnNA2.jpeg',
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/CafeOnNA2.jpeg', 2
+    UNION ALL
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/CafeOnNA3.jpeg',
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/CafeOnNA3.jpeg', 3
+    UNION ALL
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/CafeOnNA4.jpeg',
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/CafeOnNA4.jpeg', 4
+) t
+WHERE NOT EXISTS (SELECT 1 FROM store_image si WHERE si.store_id = @s7);
+
+-- Store 8 images 알렉산더
+INSERT INTO store_image (store_id, image_url, thumbnail_url, sort_order)
+SELECT @s8, t.image_url, t.thumbnail_url, t.sort_order
+FROM (
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Alexander1.jpeg' AS image_url,
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Alexander1.jpeg' AS thumbnail_url,
+           1 AS sort_order
+    UNION ALL
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Alexander2.jpeg',
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Alexander2.jpeg', 2
+    UNION ALL
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Alexander3.jpeg',
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Alexander3.jpeg', 3
+    UNION ALL
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Alexander4.jpeg',
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Alexander4.jpeg', 4
+) t
+WHERE NOT EXISTS (SELECT 1 FROM store_image si WHERE si.store_id = @s8);
+
+-- Store 9 images AS
+INSERT INTO store_image (store_id, image_url, thumbnail_url, sort_order)
+SELECT @s9, t.image_url, t.thumbnail_url, t.sort_order
+FROM (
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/AS1.jpeg' AS image_url,
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/AS1.jpeg' AS thumbnail_url,
+           1 AS sort_order
+    UNION ALL
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/AS2.jpeg',
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/AS2.jpeg', 2
+    UNION ALL
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/AS3.jpeg',
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/AS3.jpeg', 3
+    UNION ALL
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/AS4.jpeg',
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/AS4.jpeg', 4
+) t
+WHERE NOT EXISTS (SELECT 1 FROM store_image si WHERE si.store_id = @s9);
+
+-- Store 10 images 언노운
+INSERT INTO store_image (store_id, image_url, thumbnail_url, sort_order)
+SELECT @s10, t.image_url, t.thumbnail_url, t.sort_order
+FROM (
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/UnKnown1.jpeg' AS image_url,
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/UnKnown1.jpeg' AS thumbnail_url,
+           1 AS sort_order
+    UNION ALL
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/UnKnown2.jpeg',
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/UnKnown2.jpeg', 2
+    UNION ALL
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/UnKnown3.png',
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/UnKnown3.png', 3
+    UNION ALL
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/UnKnown4.jpeg',
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/UnKnown4.jpeg', 4
+) t
+WHERE NOT EXISTS (SELECT 1 FROM store_image si WHERE si.store_id = @s10);
+
+-- Store 11 images 텟어텟
+INSERT INTO store_image (store_id, image_url, thumbnail_url, sort_order)
+SELECT @s11, t.image_url, t.thumbnail_url, t.sort_order
+FROM (
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Tate1.jpeg' AS image_url,
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Tate1.jpeg' AS thumbnail_url,
+           1 AS sort_order
+    UNION ALL
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Tate2.jpeg',
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Tate2.jpeg', 2
+    UNION ALL
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Tate3.jpeg',
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Tate3.jpeg', 3
+    UNION ALL
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Tate4.jpeg',
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Tate4.jpeg', 4
+) t
+WHERE NOT EXISTS (SELECT 1 FROM store_image si WHERE si.store_id = @s11);
+
+-- Store 12 images 레이어
+INSERT INTO store_image (store_id, image_url, thumbnail_url, sort_order)
+SELECT @s12, t.image_url, t.thumbnail_url, t.sort_order
+FROM (
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Layer1.jpeg' AS image_url,
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Layer1.jpeg' AS thumbnail_url,
+           1 AS sort_order
+    UNION ALL
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Layer2.jpeg',
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Layer2.jpeg', 2
+    UNION ALL
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Layer3.jpeg',
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Layer3.jpeg', 3
+    UNION ALL
+    SELECT 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Layer4.jpeg',
+           'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/stores/Layer4.jpeg', 4
+) t
+WHERE NOT EXISTS (SELECT 1 FROM store_image si WHERE si.store_id = @s12);
 
 -- 3) 메뉴 3개씩 생성 (대표 메뉴)
 -- NOTE: type은 기존 스키마의 VARCHAR(15)이므로 'MAIN'으로 통일
@@ -305,3 +491,58 @@ INSERT INTO menu (store_id, name, price, sort_order, image, type)
 SELECT s.id, '헤이즐럿라떼', 6300, 3, NULL, 'MAIN'
 FROM store s WHERE s.business_number='1000000012'
                AND NOT EXISTS (SELECT 1 FROM menu m WHERE m.store_id=s.id AND m.sort_order=3);
+
+
+-- -----------------------------------------------------------------------------
+-- Menu images (menu.image)
+-- IMPORTANT: Run AFTER the "3) 메뉴 3개씩 생성" inserts so the menu rows exist.
+-- Replace the example URLs with your actual S3 URLs.
+-- -----------------------------------------------------------------------------
+
+-- 카페 온나menu images
+UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/CafeOnNAMenu1.jpeg'
+WHERE store_id=@s7 AND sort_order=1 AND (image IS NULL OR image='');
+UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/CafeOnNAMenu2.png'
+WHERE store_id=@s7 AND sort_order=2 AND (image IS NULL OR image='');
+UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/CafeOnNAMenu3.jpeg'
+WHERE store_id=@s7 AND sort_order=3 AND (image IS NULL OR image='');
+
+-- 알렉산더 menu images
+UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/AlexanderMenu1.jpeg'
+WHERE store_id=@s8 AND sort_order=1 AND (image IS NULL OR image='');
+UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/AlexanderMenu2.jpeg'
+WHERE store_id=@s8 AND sort_order=2 AND (image IS NULL OR image='');
+UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/AlexanderMenu3.jpeg'
+WHERE store_id=@s8 AND sort_order=3 AND (image IS NULL OR image='');
+
+-- as menu images
+UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/ASMenu1.jpeg'
+WHERE store_id=@s9 AND sort_order=1 AND (image IS NULL OR image='');
+UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/ASMenu2.jpeg'
+WHERE store_id=@s9 AND sort_order=2 AND (image IS NULL OR image='');
+UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/ASMenu3.jpeg'
+WHERE store_id=@s9 AND sort_order=3 AND (image IS NULL OR image='');
+
+-- 언노운 menu images
+UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/UnKnownMenu1.png'
+WHERE store_id=@s10 AND sort_order=1 AND (image IS NULL OR image='');
+UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/UnKnownMenu2.png'
+WHERE store_id=@s10 AND sort_order=2 AND (image IS NULL OR image='');
+UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/UnKnownMenu3.png'
+WHERE store_id=@s10 AND sort_order=3 AND (image IS NULL OR image='');
+
+-- 텟어텟 menu images
+UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/TateMenu1.jpeg'
+WHERE store_id=@s11 AND sort_order=1 AND (image IS NULL OR image='');
+UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/TateMenu2.jpeg'
+WHERE store_id=@s11 AND sort_order=2 AND (image IS NULL OR image='');
+UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/TateMenu3.jpeg'
+WHERE store_id=@s11 AND sort_order=3 AND (image IS NULL OR image='');
+
+-- 레이어 menu images
+UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/LayerMenu1.png'
+WHERE store_id=@s12 AND sort_order=1 AND (image IS NULL OR image='');
+UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/LayerMenu2.png'
+WHERE store_id=@s12 AND sort_order=2 AND (image IS NULL OR image='');
+UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/LayerMenu3.png'
+WHERE store_id=@s12 AND sort_order=3 AND (image IS NULL OR image='');
