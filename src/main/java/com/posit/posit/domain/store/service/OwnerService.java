@@ -24,6 +24,8 @@ import com.posit.posit.domain.user.entity.User;
 import com.posit.posit.domain.user.repository.OwnerProfileRepository;
 import com.posit.posit.domain.user.repository.UserRepository;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -120,13 +122,13 @@ public class OwnerService {
 
     // 3. 수신함 조회 (무한 스크롤 적용)
     @Transactional(readOnly = true)
-    public InboxResponse getInbox(Long storeId, String tab, Long cursorId, int limit) {
+    public Slice<InboxMemoResponse> getInbox(Long storeId, String tab, Long cursorId, int limit) {
 
-        // 1. 다음 페이지 있는지 확인하기 위해 limit + 1개를 조회함
+        // 1. 다음 페이지 확인을 위해 limit + 1개 조회
         Pageable pageable = PageRequest.of(0, limit + 1);
         List<Memo> memos;
 
-        // 2. 탭 별 쿼리 실행
+        // 2. 탭별 쿼리 실행
         switch (tab) {
             case "ANSWER":
                 memos = memoRepository.findAnswers(storeId, cursorId, pageable);
@@ -137,37 +139,26 @@ public class OwnerService {
             case "ADOPTED":
                 memos = memoRepository.findAdoptedMemos(storeId, cursorId, pageable);
                 break;
-            case "REVIEWING": // 전체 대기
+            case "REVIEWING":
             default:
                 memos = memoRepository.findAllReviewing(storeId, cursorId, pageable);
                 break;
         }
 
-        // 3. 무한 스크롤 메타데이터 계산
+        // 3. hasNext 계산
         boolean hasNext = false;
-        Long nextCursor = null;
-
-        if (memos.size() > limit) { // 요청한 것보다 하나 더 왔다면? 다음 페이지 있음!
+        if (memos.size() > limit) {
             hasNext = true;
-            memos.remove(limit); // 확인용으로 가져온 마지막 하나는 제거 (프론트엔드엔 limit개만 줌)
-            nextCursor = memos.get(memos.size() - 1).getId(); // 마지막 아이템 ID가 다음 커서
-        } else if (!memos.isEmpty()) {
-            // 끝 페이지가 아닌데 데이터가 있는 경우 (다음 페이지는 없음)
-            nextCursor = memos.get(memos.size() - 1).getId();
+            memos.remove(limit); // 확인용 1개 제거
         }
 
-        // 4. DTO 변환
+        // 4. DTO 변환 (작성하신 InboxMemoResponse 사용)
         List<InboxMemoResponse> memoDtos = memos.stream()
                 .map(InboxMemoResponse::from)
                 .collect(Collectors.toList());
 
-        return InboxResponse.builder()
-                .memos(memoDtos)
-                .meta(InboxResponse.Meta.builder()
-                        .hasNext(hasNext)
-                        .nextCursor(nextCursor)
-                        .build())
-                .build();
+        // 5. Slice 반환 (데이터와 페이징 정보가 담김)
+        return new SliceImpl<>(memoDtos, pageable, hasNext);
     }
 
     private final IssuedCouponRepository issuedCouponRepository;

@@ -2,18 +2,22 @@ package com.posit.posit.domain.coupon.service;
 
 import com.posit.posit.domain.coupon.dto.response.CouponRedeemResponse;
 import com.posit.posit.domain.coupon.dto.response.MyCouponDetailResponse;
-import com.posit.posit.domain.coupon.dto.response.MyCouponListResponse;
+import com.posit.posit.domain.coupon.dto.response.MyCouponResponse;
 import com.posit.posit.domain.coupon.entity.IssuedCoupon;
 import com.posit.posit.domain.coupon.entity.IssuedCouponStatus;
 import com.posit.posit.domain.coupon.repository.IssuedCouponRepository;
 import com.posit.posit.domain.store.entity.Store;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,41 +26,29 @@ public class CouponService {
 
     private final IssuedCouponRepository issuedCouponRepository;
 
-    public MyCouponListResponse getMyCoupons(Long userId, IssuedCouponStatus status, Long cursorId, int size) {
+    @Transactional
+    public Slice<MyCouponResponse> getMyCoupons(Long userId, IssuedCouponStatus status, Long cursorId, int size) {
 
-        // 1. 다음 페이지 확인을 위해 size + 1개 조회
-        PageRequest pageRequest = PageRequest.of(0, size + 1);
+        Pageable pageable = PageRequest.of(0, size + 1);
         List<IssuedCoupon> coupons;
 
         if (cursorId == null) {
-            coupons = issuedCouponRepository.findAllMyCouponsFirst(userId, status, pageRequest);
+            coupons = issuedCouponRepository.findAllMyCouponsFirst(userId, status, pageable);
         } else {
-            coupons = issuedCouponRepository.findAllMyCouponsNext(userId, status, cursorId, pageRequest);
+            coupons = issuedCouponRepository.findAllMyCouponsNext(userId, status, cursorId, pageable);
         }
 
-        // 2. hasNext 판단 및 데이터 자르기
         boolean hasNext = false;
-        Long nextCursor = null;
-
         if (coupons.size() > size) {
             hasNext = true;
-            coupons.remove(size); // +1개 제거
-            nextCursor = coupons.get(coupons.size() - 1).getId(); // 다음 커서 ID
+            coupons.remove(size);
         }
 
-        // 3. DTO 변환
-        List<MyCouponListResponse.CouponInfo> couponInfos = coupons.stream()
-                .map(MyCouponListResponse.CouponInfo::from)
-                .toList();
+        List<MyCouponResponse> dtos = coupons.stream()
+                .map(MyCouponResponse::from)
+                .collect(Collectors.toList());
 
-        // 4. Meta 정보 생성 및 반환
-        return MyCouponListResponse.builder()
-                .coupons(couponInfos)
-                .meta(MyCouponListResponse.Meta.builder()
-                        .nextCursor(nextCursor)
-                        .hasNext(hasNext)
-                        .build())
-                .build();
+        return new SliceImpl<>(dtos, pageable, hasNext);
     }
 
     // 쿠폰 상세 조회
