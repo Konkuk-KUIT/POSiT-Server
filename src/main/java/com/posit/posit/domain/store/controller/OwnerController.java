@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Slice;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -66,15 +67,20 @@ public class OwnerController {
     // GET /owner/inbox?storeId=1&tab=ANSWER&cursorId=100&limit=10
     @Operation(summary = "수신함 목록 조회", description = "답변이 달린 고민이나, 쿠폰 사용 알림 등을 조회합니다.")
     @GetMapping("/owner/inbox")
-    public ResponseEntity<ApiResponse<InboxResponse>> getInbox(
-            @AuthenticationPrincipal UserPrincipal user,
-            @RequestParam Long storeId,
-            @RequestParam(defaultValue = "ANSWER") String tab, // 기본값: 고민 답변 탭
-            @RequestParam(required = false) Long cursorId,        // 첫 페이지면 null
-            @RequestParam(defaultValue = "10") int limit          // 기본 10개씩
+    public ApiResponse<List<InboxMemoResponse>> getInbox(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam String tab,
+            @RequestParam(required = false) Long cursorId,
+            @RequestParam(defaultValue = "10") int limit
     ) {
-        InboxResponse response = ownerService.getInbox(storeId, tab, cursorId, limit);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        Long storeId = 1L; // 임시 storeId
+
+        // 1. 서비스에서 Slice(데이터 뭉치)를 받음
+        Slice<InboxMemoResponse> result = ownerService.getInbox(storeId, tab, cursorId, limit);
+
+        // 2. ApiResponse.success(Slice) 호출
+        // -> data에는 List가, meta에는 페이징 정보가 자동으로 들어갑니다.
+        return ApiResponse.success(result);
     }
 
     // 5-1. 답변 채택
