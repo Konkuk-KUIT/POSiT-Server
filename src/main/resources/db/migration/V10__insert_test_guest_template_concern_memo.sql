@@ -10,7 +10,23 @@
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+
 ALTER TABLE memo MODIFY title VARCHAR(50) NOT NULL;
+
+-- Resolve store ids by business_number (avoid relying on store.id or store.name)
+SET @bn1 := '1000000001';
+SET @bn2 := '1000000002';
+SET @bn3 := '1000000003';
+SET @bn4 := '1000000004';
+SET @bn5 := '1000000005';
+SET @bn6 := '1000000006';
+
+SET @s1 := (SELECT id FROM store WHERE business_number = @bn1);
+SET @s2 := (SELECT id FROM store WHERE business_number = @bn2);
+SET @s3 := (SELECT id FROM store WHERE business_number = @bn3);
+SET @s4 := (SELECT id FROM store WHERE business_number = @bn4);
+SET @s5 := (SELECT id FROM store WHERE business_number = @bn5);
+SET @s6 := (SELECT id FROM store WHERE business_number = @bn6);
 
 -- ============================================================
 -- 1. 더미 GUEST 5명
@@ -37,7 +53,7 @@ SELECT
     30,
     s.owner_id
 FROM store s
-WHERE s.name = '카페 레이지아워'
+WHERE s.business_number = @bn1
   AND s.owner_id IS NOT NULL
   AND NOT EXISTS (
     SELECT 1
@@ -55,7 +71,7 @@ SELECT
     14,
     s.owner_id
 FROM store s
-WHERE s.name = '마이 디어 버터하우스'
+WHERE s.business_number = @bn2
   AND s.owner_id IS NOT NULL
   AND NOT EXISTS (
     SELECT 1
@@ -68,7 +84,7 @@ WHERE s.name = '마이 디어 버터하우스'
 INSERT INTO coupon_template (title, description, image, valid_days, created_by_user_id)
 SELECT '브런치 메뉴 10% 할인 쿠폰', '브런치 메뉴 10% 할인', 'https://example.com/coupon_brunch.png', 14, s.owner_id
 FROM store s
-WHERE s.name='도우터'
+WHERE s.business_number = @bn3
   AND s.owner_id IS NOT NULL
   AND NOT EXISTS (
     SELECT 1
@@ -81,7 +97,7 @@ WHERE s.name='도우터'
 INSERT INTO coupon_template (title, description, image, valid_days, created_by_user_id)
 SELECT '케이크 메뉴 무료 레터링', '케이크 구매 시 무료 레터링', 'https://example.com/coupon_cake.png', 30, s.owner_id
 FROM store s
-WHERE s.name='café 462'
+WHERE s.business_number = @bn4
   AND s.owner_id IS NOT NULL
   AND NOT EXISTS (
     SELECT 1
@@ -94,7 +110,7 @@ WHERE s.name='café 462'
 INSERT INTO coupon_template (title, description, image, valid_days, created_by_user_id)
 SELECT '빙수 메뉴 1천원 할인', '빙수 메뉴 1천원 할인', 'https://example.com/coupon_bingsu.png', 21, s.owner_id
 FROM store s
-WHERE s.name='카페 언필드'
+WHERE s.business_number = @bn5
   AND s.owner_id IS NOT NULL
   AND NOT EXISTS (
     SELECT 1
@@ -107,7 +123,7 @@ WHERE s.name='카페 언필드'
 INSERT INTO coupon_template (title, description, image, valid_days, created_by_user_id)
 SELECT '밀크티 사이즈 업', '밀크티 무료 사이즈 업', 'https://example.com/coupon_milktea.png', 21, s.owner_id
 FROM store s
-WHERE s.name='더이퀄리브리엄커피'
+WHERE s.business_number = @bn6
   AND s.owner_id IS NOT NULL
   AND NOT EXISTS (
     SELECT 1
@@ -128,7 +144,7 @@ SELECT
     ct.id
 FROM store s
 JOIN coupon_template ct ON ct.created_by_user_id = s.owner_id
-WHERE s.name='카페 레이지아워'
+WHERE s.business_number = @bn1
   AND NOT EXISTS (
     SELECT 1
     FROM concern c
@@ -140,7 +156,7 @@ WHERE s.name='카페 레이지아워'
 INSERT INTO concern (content, status, store_id, template_id)
 SELECT '새로운 두바이 디저트 메뉴로 어떤 것이 좋을까요?', 'OPEN', s.id, ct.id
 FROM store s JOIN coupon_template ct ON ct.created_by_user_id=s.owner_id
-WHERE s.name='카페 레이지아워'
+WHERE s.business_number = @bn1
   AND NOT EXISTS (
     SELECT 1
     FROM concern c
@@ -152,7 +168,7 @@ WHERE s.name='카페 레이지아워'
 INSERT INTO concern (content, status, store_id, template_id)
 SELECT '키티 휘낭시에 맛을 다양화할까요?', 'OPEN', s.id, ct.id
 FROM store s JOIN coupon_template ct ON ct.created_by_user_id=s.owner_id
-WHERE s.name='마이 디어 버터하우스'
+WHERE s.business_number = @bn2
   AND NOT EXISTS (
     SELECT 1
     FROM concern c
@@ -163,7 +179,7 @@ WHERE s.name='마이 디어 버터하우스'
 INSERT INTO concern (content, status, store_id, template_id)
 SELECT '티라미수에 코코아 파우더가 너무 많나요?', 'OPEN', s.id, ct.id
 FROM store s JOIN coupon_template ct ON ct.created_by_user_id=s.owner_id
-WHERE s.name='마이 디어 버터하우스'
+WHERE s.business_number = @bn2
   AND NOT EXISTS (
     SELECT 1
     FROM concern c
@@ -175,7 +191,7 @@ WHERE s.name='마이 디어 버터하우스'
 INSERT INTO concern (content, status, store_id, template_id)
 SELECT '플레이트에 바질 추가는 어떤가요?', 'OPEN', s.id, ct.id
 FROM store s JOIN coupon_template ct ON ct.created_by_user_id=s.owner_id
-WHERE s.name='도우터'
+WHERE s.business_number = @bn3
   AND NOT EXISTS (
     SELECT 1
     FROM concern c
@@ -187,7 +203,7 @@ WHERE s.name='도우터'
 INSERT INTO concern (content, status, store_id, template_id)
 SELECT '단일 초코 케이크를 메뉴에 추가할까요?', 'OPEN', s.id, ct.id
 FROM store s JOIN coupon_template ct ON ct.created_by_user_id=s.owner_id
-WHERE s.name='café 462'
+WHERE s.business_number = @bn4
   AND NOT EXISTS (
     SELECT 1
     FROM concern c
@@ -199,7 +215,7 @@ WHERE s.name='café 462'
 INSERT INTO concern (content, status, store_id, template_id)
 SELECT '프렌치토스트에 과일 추가 시 가격이 얼마가 적당할까요?', 'OPEN', s.id, ct.id
 FROM store s JOIN coupon_template ct ON ct.created_by_user_id=s.owner_id
-WHERE s.name='카페 언필드'
+WHERE s.business_number = @bn5
   AND NOT EXISTS (
     SELECT 1
     FROM concern c
@@ -211,7 +227,7 @@ WHERE s.name='카페 언필드'
 INSERT INTO concern (content, status, store_id, template_id)
 SELECT '디저트 류에 제철과일을 같이 곁들이는 건 어떤가요?', 'OPEN', s.id, ct.id
 FROM store s JOIN coupon_template ct ON ct.created_by_user_id=s.owner_id
-WHERE s.name='더이퀄리브리엄커피'
+WHERE s.business_number = @bn6
   AND NOT EXISTS (
     SELECT 1
     FROM concern c
@@ -236,7 +252,7 @@ FROM store s
 JOIN users u ON u.login_id='guest1'
 JOIN concern c ON c.store_id=s.id
              AND c.content='매장 조명을 조금 더 밝게 바꿔야 할까요?'
-WHERE s.name='카페 레이지아워'
+WHERE s.business_number = @bn1
   AND NOT EXISTS (
     SELECT 1
     FROM memo m
@@ -258,7 +274,7 @@ SELECT
     u.id
 FROM store s
 JOIN users u ON u.login_id='guest2'
-WHERE s.name='카페 레이지아워'
+WHERE s.business_number = @bn1
   AND NOT EXISTS (
     SELECT 1
     FROM memo m
@@ -272,7 +288,7 @@ WHERE s.name='카페 레이지아워'
 INSERT INTO memo (memo_type, title, content, status, store_id, user_id, concern_id)
 SELECT 'ANSWER','말차 맛이 추가되면 좋을거같아요!','말차 맛이 추가되면 좋을거같아요!','REVIEWING',s.id,u.id,c.id
 FROM store s JOIN users u ON u.login_id='guest3' JOIN concern c ON c.store_id=s.id AND c.content='키티 휘낭시에 맛을 다양화할까요?'
-WHERE s.name='마이 디어 버터하우스'
+WHERE s.business_number = @bn2
   AND NOT EXISTS (
     SELECT 1
     FROM memo m
@@ -287,7 +303,7 @@ WHERE s.name='마이 디어 버터하우스'
 INSERT INTO memo (memo_type, title, content, status, store_id, user_id, concern_id)
 SELECT 'ANSWER','바질 향이 브런치랑 잘 어울려요.','바질 향이 브런치랑 잘 어울려요.','ADOPTED',s.id,u.id,c.id
 FROM store s JOIN users u ON u.login_id='guest1' JOIN concern c ON c.store_id=s.id AND c.content='플레이트에 바질 추가는 어떤가요?'
-WHERE s.name='도우터'
+WHERE s.business_number = @bn3
   AND NOT EXISTS (
     SELECT 1
     FROM memo m
@@ -302,7 +318,7 @@ WHERE s.name='도우터'
 INSERT INTO memo (memo_type, title, content, status, store_id, user_id, concern_id)
 SELECT 'ANSWER','꾸덕한 초코 케이크 좋아요!','꾸덕한 초코 케이크 좋아요!','ADOPTED',s.id,u.id,c.id
 FROM store s JOIN users u ON u.login_id='guest2' JOIN concern c ON c.store_id=s.id AND c.content='단일 초코 케이크를 메뉴에 추가할까요?'
-WHERE s.name='café 462'
+WHERE s.business_number = @bn4
   AND NOT EXISTS (
     SELECT 1
     FROM memo m
@@ -317,7 +333,7 @@ WHERE s.name='café 462'
 INSERT INTO memo (memo_type, title, content, status, store_id, user_id, concern_id)
 SELECT 'ANSWER','제철 과일을 올리면 좋을거같은데, 가격이 오를까봐 걱정이네요.','제철 과일을 올리면 좋을거같은데, 가격이 오를까봐 걱정이네요.','REVIEWING',s.id,u.id,c.id
 FROM store s JOIN users u ON u.login_id='guest4' JOIN concern c ON c.store_id=s.id AND c.content='프렌치토스트에 과일 추가 시 가격이 얼마가 적당할까요?'
-WHERE s.name='카페 언필드'
+WHERE s.business_number = @bn5
   AND NOT EXISTS (
     SELECT 1
     FROM memo m
@@ -332,7 +348,7 @@ WHERE s.name='카페 언필드'
 INSERT INTO memo (memo_type, free_type, title, content, status, store_id, user_id)
 SELECT 'FREE','MENU_DEV','양이 적은 밀크티 출시 원해요.','양이 적은 밀크티 출시 원해요.','REVIEWING',s.id,u.id
 FROM store s JOIN users u ON u.login_id='guest5'
-WHERE s.name='더이퀄리브리엄커피'
+WHERE s.business_number = @bn6
   AND NOT EXISTS (
     SELECT 1
     FROM memo m

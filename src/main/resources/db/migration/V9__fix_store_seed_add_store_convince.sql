@@ -22,23 +22,34 @@ ON DUPLICATE KEY UPDATE
 
 
 -- -----------------------------------------------------------------------------
--- Store seed fix: open_time format ("HH:mm-HH:mm") and move options -> store_convince
+-- Store seed fix :
+--  - open_time format ("HH:mm-HH:mm")
+--  - not_open
+--  - TYPE filter mapping via store_filter
+--  - conveniences mapping via store_convince
 -- -----------------------------------------------------------------------------
 
+-- Resolve store ids by business_number
+SET @s1 := (SELECT id FROM store WHERE business_number = '1000000001');
+SET @s2 := (SELECT id FROM store WHERE business_number = '1000000002');
+SET @s3 := (SELECT id FROM store WHERE business_number = '1000000003');
+SET @s4 := (SELECT id FROM store WHERE business_number = '1000000004');
+SET @s5 := (SELECT id FROM store WHERE business_number = '1000000005');
+SET @s6 := (SELECT id FROM store WHERE business_number = '1000000006');
+
 -- 1) Fix open_time to "HH:mm-HH:mm"
-UPDATE store SET open_time = '10:00-24:00' WHERE id = 1;
-UPDATE store SET open_time = '12:00-22:00' WHERE id = 2;
-UPDATE store SET open_time = '11:00-22:30' WHERE id = 3;
-UPDATE store SET open_time = '12:00-20:30' WHERE id = 4;
-UPDATE store SET open_time = '12:00-22:00' WHERE id = 5;
-UPDATE store SET open_time = '12:00-22:00' WHERE id = 6;
+UPDATE store SET open_time = '10:00-24:00' WHERE business_number = '1000000001';
+UPDATE store SET open_time = '12:00-22:00' WHERE business_number = '1000000002';
+UPDATE store SET open_time = '11:00-22:30' WHERE business_number = '1000000003';
+UPDATE store SET open_time = '12:00-20:30' WHERE business_number = '1000000004';
+UPDATE store SET open_time = '12:00-22:00' WHERE business_number = '1000000005';
+UPDATE store SET open_time = '12:00-22:00' WHERE business_number = '1000000006';
 
 -- 2) Fix not_open
-UPDATE store SET not_open = NULL WHERE id IN (1,2,3,4);
-UPDATE store SET not_open = 'TUE' WHERE id IN (5,6);
+UPDATE store SET not_open = NULL WHERE business_number IN ('1000000001','1000000002','1000000003','1000000004');
+UPDATE store SET not_open = 'TUE' WHERE business_number IN ('1000000005','1000000006');
 
 -- 3) Seed TYPE filters (store type chips) and map stores via store_filter
--- NOTE: filter.code is VARCHAR(10), so keep codes short.
 INSERT INTO filter (category, code, display_name) VALUES
   ('TYPE', 'STUDY',   '스터디 카페'),
   ('TYPE', 'BRUNCH',  '브런치 카페'),
@@ -48,62 +59,70 @@ ON DUPLICATE KEY UPDATE
 
 -- Map store -> TYPE filter
 INSERT IGNORE INTO store_filter (store_id, filter_id)
-SELECT 1, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
+SELECT @s1, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
 
 INSERT IGNORE INTO store_filter (store_id, filter_id)
-SELECT 2, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
+SELECT @s2, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
 
 INSERT IGNORE INTO store_filter (store_id, filter_id)
-SELECT 3, f.id FROM filter f WHERE f.category='TYPE' AND f.code='BRUNCH';
+SELECT @s3, f.id FROM filter f WHERE f.category='TYPE' AND f.code='BRUNCH';
 
 INSERT IGNORE INTO store_filter (store_id, filter_id)
-SELECT 4, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
+SELECT @s4, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
 
 INSERT IGNORE INTO store_filter (store_id, filter_id)
-SELECT 5, f.id FROM filter f WHERE f.category='TYPE' AND f.code='BRUNCH';
+SELECT @s5, f.id FROM filter f WHERE f.category='TYPE' AND f.code='BRUNCH';
 INSERT IGNORE INTO store_filter (store_id, filter_id)
-SELECT 5, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
+SELECT @s5, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
 
 INSERT IGNORE INTO store_filter (store_id, filter_id)
-SELECT 6, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
+SELECT @s6, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
 
 -- 4) Map conveniences into store_convince (options extracted from the Excel row)
 
 -- Store 1: TAKEOUT, RESERVATION, WIFI, PET_FRIENDLY
 INSERT IGNORE INTO store_convince (store_id, convince_id)
-SELECT 1, c.id FROM convince c
+SELECT @s1, c.id FROM convince c
 WHERE c.code IN ('TAKEOUT','RESERVATION','WIFI','PET_FRIENDLY');
 
 -- Store 2: WIFI, GROUP_SEAT, TAKEOUT, DELIVERY
 INSERT IGNORE INTO store_convince (store_id, convince_id)
-SELECT 2, c.id FROM convince c
+SELECT @s2, c.id FROM convince c
 WHERE c.code IN ('WIFI','GROUP_SEAT','TAKEOUT','DELIVERY');
 
 -- Store 3: GROUP_SEAT, WIFI, TAKEOUT
 INSERT IGNORE INTO store_convince (store_id, convince_id)
-SELECT 3, c.id FROM convince c
+SELECT @s3, c.id FROM convince c
 WHERE c.code IN ('GROUP_SEAT','WIFI','TAKEOUT');
 
 -- Store 4: TAKEOUT, RESERVATION, WIFI
 INSERT IGNORE INTO store_convince (store_id, convince_id)
-SELECT 4, c.id FROM convince c
+SELECT @s4, c.id FROM convince c
 WHERE c.code IN ('TAKEOUT','RESERVATION','WIFI');
 
 -- Store 5: TAKEOUT, WIFI, DELIVERY, GROUP_SEAT
 -- Excel source had a typo like "무와이파이"; we normalize to WIFI.
 INSERT IGNORE INTO store_convince (store_id, convince_id)
-SELECT 5, c.id FROM convince c
+SELECT @s5, c.id FROM convince c
 WHERE c.code IN ('TAKEOUT','WIFI','DELIVERY','GROUP_SEAT');
 
 -- Store 6: WIFI, TAKEOUT
 INSERT IGNORE INTO store_convince (store_id, convince_id)
-SELECT 6, c.id FROM convince c
+SELECT @s6, c.id FROM convince c
 WHERE c.code IN ('WIFI','TAKEOUT');
 
 -- Optional sanity checks
--- SELECT s.id, s.name, GROUP_CONCAT(c.code ORDER BY c.code SEPARATOR ',') AS convinces
+-- SELECT business_number, id, name, open_time, not_open FROM store WHERE business_number IN ('1000000001','1000000002','1000000003','1000000004','1000000005','1000000006');
+-- SELECT s.business_number, s.id, s.name, GROUP_CONCAT(DISTINCT f.code ORDER BY f.code SEPARATOR ',') AS type_filters
+-- FROM store s
+-- LEFT JOIN store_filter sf ON sf.store_id = s.id
+-- LEFT JOIN filter f ON f.id = sf.filter_id AND f.category='TYPE'
+-- WHERE s.business_number IN ('1000000001','1000000002','1000000003','1000000004','1000000005','1000000006')
+-- GROUP BY s.business_number, s.id, s.name;
+--
+-- SELECT s.business_number, s.id, s.name, GROUP_CONCAT(DISTINCT c.code ORDER BY c.code SEPARATOR ',') AS convinces
 -- FROM store s
 -- LEFT JOIN store_convince sc ON sc.store_id = s.id
 -- LEFT JOIN convince c ON c.id = sc.convince_id
--- WHERE s.id BETWEEN 1 AND 6
--- GROUP BY s.id, s.name;
+-- WHERE s.business_number IN ('1000000001','1000000002','1000000003','1000000004','1000000005','1000000006')
+-- GROUP BY s.business_number, s.id, s.name;
