@@ -48,6 +48,19 @@ public class OwnerService {
     private final UserRepository userRepository; // [변경] Store 대신 User 필요
     private final RequestService requestBuilder;
     private final StoreFilterRepository storeFilterRepository;
+    private final FilterRepository filterRepository;
+    private final ConvinceRepository convinceRepository;
+    private final StoreImageRepository storeImageRepository;
+    private final MenuRepository menuRepository;
+    private final StoreConvinceRepository storeConvinceRepository;
+    private final OwnerProfileRepository ownerProfileRepository;
+    private final GeocodingService geocodingService;
+    private final IssuedCouponRepository issuedCouponRepository;
+    private final DecisionRepository decisionRepository;
+    private final ConcernRepository concernRepository;
+    private final StoreRepository storeRepository;
+    private final MemoRepository memoRepository;
+    private final PasswordEncoder passwordEncoder;
 
     // 1. 쿠폰 템플릿 생성
     @Transactional
@@ -83,10 +96,6 @@ public class OwnerService {
                 .collect(Collectors.toList());
     }
 
-
-    private final ConcernRepository concernRepository;
-    private final StoreRepository storeRepository;
-
     //고민 등록
     @Transactional
     public Long createConcern(Long userId, Long storeId, ConcernCreateRequest request) {
@@ -120,8 +129,6 @@ public class OwnerService {
         // 4. 저장
         return concernRepository.save(concern).getId();
     }
-
-    private final MemoRepository memoRepository;
 
     // 3. 수신함 조회 (무한 스크롤 적용)
     @Transactional(readOnly = true)
@@ -163,9 +170,6 @@ public class OwnerService {
         // 5. Slice 반환 (데이터와 페이징 정보가 담김)
         return new SliceImpl<>(memoDtos, pageable, hasNext);
     }
-
-    private final IssuedCouponRepository issuedCouponRepository;
-    private final DecisionRepository decisionRepository;
 
     // 5-1. 답변 채택 (ADOPT)
     @Transactional
@@ -295,8 +299,6 @@ public class OwnerService {
                 .build();
     }
 
-    // 클래스 내부 필드에 PasswordEncoder 추가
-    private final PasswordEncoder passwordEncoder;
 
     // 6. 쿠폰 사용 처리 (직원 인증 포함)
     @Transactional
@@ -325,14 +327,6 @@ public class OwnerService {
         // 4. 검증 통과 -> 쿠폰 사용 처리 (상태 변경)
         coupon.use();
     }
-
-    // ... Repository Import ...
-    private final ConvinceRepository convinceRepository; // 추가
-    private final StoreImageRepository storeImageRepository; // 추가
-    private final MenuRepository menuRepository; // 추가
-    private final StoreConvinceRepository storeConvinceRepository; // 추가
-    private final OwnerProfileRepository ownerProfileRepository;
-    private final GeocodingService geocodingService;
 
     // 가게 등록
     @Transactional
@@ -364,7 +358,6 @@ public class OwnerService {
         String roadAddr = request.getAddress().getRoadAddress();
         GeocodingService.Coordinate coordinate = geocodingService.getCoordinate(roadAddr);
 
-
         // 4. Store 엔티티 생성 및 저장
         Store store = Store.builder()
                 .owner(owner)
@@ -389,10 +382,16 @@ public class OwnerService {
         storeRepository.save(store);
 
         // TYPE 필터 연결해서 저장
-        if(request.getType() != null && ) {
-            Filter typeFilter = storeFilterRepository
+        if(request.getType() != null) {
+            Filter typeFilter = filterRepository
                     .findByCategoryAndCode("TYPE", request.getType())
-                    .orEleseThrow
+                    .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 필터 코드입니다 : " + request.getType().name()));
+
+            StoreFilter storeFilter = StoreFilter.builder()
+                    .store(store)
+                    .filter(typeFilter)
+                    .build();
+            storeFilterRepository.save(storeFilter);
         }
 
         // 5. 가게 이미지 저장

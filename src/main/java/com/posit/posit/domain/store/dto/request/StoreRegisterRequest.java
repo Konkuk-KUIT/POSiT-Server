@@ -1,6 +1,6 @@
 package com.posit.posit.domain.store.dto.request;
 
-import com.posit.posit.domain.store.entity.StoreType;
+import com.posit.posit.domain.store.entity.StoreFilterCategory;
 import com.posit.posit.domain.store.entity.Weekday;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -20,7 +20,7 @@ public class StoreRegisterRequest {
     private AddressDto address;
 
     @NotNull(message = "가게 종류는 필수입니다.")
-    private StoreType type; // STUDY, BRUNCH ...
+    private StoreFilterCategory type; // STUDY, BRUNCH, DESSERT
 
     @NotBlank(message = "전화번호는 필수입니다.")
     private String phone;
