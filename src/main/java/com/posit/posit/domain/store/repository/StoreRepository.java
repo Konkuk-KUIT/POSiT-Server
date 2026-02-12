@@ -12,8 +12,6 @@ import java.util.Optional;
 public interface StoreRepository extends JpaRepository<Store, Long> {
     Optional<Store> findByBusinessNumber(String businessNumber);
 
-    //동시성 방지용 락 (가입 요청 동시에 2번 방지..)
-    //todo : 이거 넣어야하는지 확인
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from Store s where s.businessNumber = :businessNumber")
     Optional<Store> findByBusinessNumberForUpdate(@Param("businessNumber") String businessNumber);
@@ -21,5 +19,7 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from Store s where s.businessNumber = :businessNumber and s.owner is null")
     Optional<Store> findUnassignedByBusinessNumberForUpdate(@Param("businessNumber") String businessNumber);
+
+    Optional<Store> findByOwnerId(Long ownerId);
 
 }
