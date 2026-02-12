@@ -1,7 +1,7 @@
 package com.posit.posit.domain.map.dto.response;
 
 import com.posit.posit.domain.store.entity.MenuType;
-import com.posit.posit.domain.store.entity.StoreCategory;
+import com.posit.posit.domain.store.entity.StoreType;
 import com.posit.posit.domain.store.entity.Weekday;
 
 import java.util.List;
@@ -9,7 +9,7 @@ import java.util.List;
 public record MapStoreDetailResponse(
         Long storeId,
         String name,
-        StoreCategory category,
+        StoreType category,
         String typeCode,
         String description,
         String statusCode,

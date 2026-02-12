@@ -26,8 +26,9 @@ public class Filter {
     @Column(name = "category", length = 20, nullable = false)
     private String category; // TYPE, MOOD
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "code", length = 10, nullable = false)
-    private String code;
+    private StoreFilterCategory code;
 
     @Column(name = "display_name", length = 20, nullable = false)
     private String displayName;

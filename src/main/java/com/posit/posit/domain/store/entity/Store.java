@@ -43,7 +43,7 @@ public class Store {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "category", nullable = false)
-    private StoreCategory category;
+    private StoreType category;
 
     @Column(name = "open_time", length = 20, nullable = false)
     private String openTime; // "HH:mm-HH:mm"
