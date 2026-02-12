@@ -14,4 +14,16 @@ public record Meta(
                 slice.hasNext()
         );
     }
+
+    public static Meta from(Long cursorId) {
+        if (cursorId == null) {
+            // 커서가 없으면 다음 페이지도 없음
+            return new Meta(null, null, false);
+        }
+        return new Meta(
+                null,
+                String.valueOf(cursorId), // Long -> String 변환
+                true // 커서 ID가 존재한다는 건 다음 페이지가 있다는 뜻
+        );
+    }
 }
