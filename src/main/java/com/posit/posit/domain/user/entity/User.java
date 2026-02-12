@@ -110,10 +110,14 @@ public class User {
     }
 
     public void updateProfile(String name, String phone, LocalDate birth, Gender gender) {
-        this.name = name;
-        this.phone = phone;
-        this.birth = birth;
-        this.gender = gender;
+        if (name != null && !name.isBlank()) this.name = name;
+        if (phone != null && !phone.isBlank()) this.phone = phone;
+        if (birth != null) this.birth = birth;
+        if (gender != null) this.gender = gender;
+    }
+
+    public void updatePassword(String encodedPassword) {
+        this.password = encodedPassword;
     }
 
 }

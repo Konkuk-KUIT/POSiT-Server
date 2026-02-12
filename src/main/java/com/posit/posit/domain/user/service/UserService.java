@@ -5,6 +5,7 @@ import com.posit.posit.domain.user.dto.response.UserMyPageResponse;
 import com.posit.posit.domain.user.entity.User;
 import com.posit.posit.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     // 내 정보 조회
     public UserMyPageResponse getMyPage(Long userId) {
@@ -37,6 +39,10 @@ public class UserService {
                 request.getBirthDate(),
                 request.getGender()
         );
+
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            user.updatePassword(passwordEncoder.encode(request.getPassword()));
+        }
 
         // 3. 수정된 정보 반환 (확인용)
         return UserMyPageResponse.from(user);
