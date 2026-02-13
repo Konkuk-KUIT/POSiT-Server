@@ -279,13 +279,12 @@ public class OwnerService {
 
     // 5. 사장님 홈 화면 조회
     @Transactional(readOnly = true)
-    public OwnerHomeResponse getOwnerHome(Long userId, Long storeId) {
+    public OwnerHomeResponse getOwnerHome(Long ownerId) {
 
         // 1. 가게 및 사장님 정보 조회
-        Store store = storeRepository.findById(storeId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 가게입니다."));
-
-        // 사장님 닉네임 (Store 엔티티가 User를 참조하고 있다고 가정)
+        Store store = storeRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
+        Long storeId = store.getId();
         // 만약 store.getOwner()가 없다면 userRepository.findById(userId)를 써야 함
         String nickname = store.getOwner().getName(); // 또는 getLoginId()
 
@@ -300,7 +299,7 @@ public class OwnerService {
         long newMemo = memoRepository.countByStoreIdAndStatus(storeId, MemoStatus.REVIEWING);
 
         // (4) 쿠폰 발행 수
-        long totalCount = issuedCouponRepository.countByUserId(userId);
+        long totalCount = issuedCouponRepository.countByUserId(ownerId);
 
 // (1) 최신 고민글 3개 가져오기
         List<Concern> recentConcerns = concernRepository.findTop3ByStoreIdOrderByCreatedAtDesc(storeId);

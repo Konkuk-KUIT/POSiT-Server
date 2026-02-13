@@ -84,8 +84,7 @@ public class OwnerController {
             @PathVariable Long memoId,
             @RequestBody @Valid MemoAdoptRequest request
     ) {
-        ownerService.adoptMemo(user.getId(), memoId, request);
-        return ResponseEntity.ok(ApiResponse.success("채택 완료 및 쿠폰 발급 성공"));
+        return ResponseEntity.ok(ApiResponse.success(ownerService.adoptMemo(user.getId(), memoId, request)));
     }
 
     // 5-2. 답변 거절
@@ -104,10 +103,9 @@ public class OwnerController {
     @Operation(summary = "사장님 홈 화면 (대시보드)", description = "사장님 메인 화면에 필요한 정보들을 조회합니다.")
     @GetMapping("/owner/home")
     public ResponseEntity<ApiResponse<OwnerHomeResponse>> getOwnerHome(
-            @AuthenticationPrincipal UserPrincipal user,
-            @RequestParam Long storeId
+            @AuthenticationPrincipal UserPrincipal user
     ) {
-        OwnerHomeResponse response = ownerService.getOwnerHome(user.getId(), storeId);
+        OwnerHomeResponse response = ownerService.getOwnerHome(user.getId());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
