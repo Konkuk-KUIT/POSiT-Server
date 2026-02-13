@@ -544,7 +544,7 @@ public class OwnerService {
     }
 
     // 12. 메모 상세 조회
-    @Transactional(readOnly = true)
+    @Transactional
     public MemoDetailResponse getMemoDetail(Long userId, Long memoId) { // type 제거!
 
         // 1. 메모 조회
@@ -556,6 +556,7 @@ public class OwnerService {
             throw new IllegalArgumentException("해당 메모를 조회할 권한이 없습니다.");
         }
 
+        memo.markOwnerRead();
 
         // 4. DTO 변환
         return MemoDetailResponse.from(memo);

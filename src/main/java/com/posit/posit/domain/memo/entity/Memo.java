@@ -54,7 +54,7 @@ public class Memo {
     @Column(name = "updated_at", insertable = false, updatable = false)
     private LocalDateTime updatedAt;
 
-    @Column(name = "ownerRead", nullable = false)
+    @Column(name = "owner_read", nullable = false)
     private boolean ownerRead;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
