@@ -100,8 +100,7 @@ public class OwnerService {
 
     //고민 등록
     @Transactional
-    public Long createConcern(Long ownerId, ConcernCreateRequest request) {
-
+    public ConcernCreateResponse createConcern(Long ownerId, ConcernCreateRequest request) {
         // 1. 가게 조회
         Store store = storeRepository.findByOwnerId(ownerId)
                 .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
@@ -124,7 +123,8 @@ public class OwnerService {
                 .build();
 
         // 4. 저장
-        return concernRepository.save(concern).getId();
+        concernRepository.save(concern);
+        return new ConcernCreateResponse(concern.getId(), store.getId(), template.getId());
     }
 
     // 3. 수신함 조회 (무한 스크롤 적용)
@@ -173,7 +173,7 @@ public class OwnerService {
 
     // 5-1. 답변 채택 (ADOPT)
     @Transactional
-    public void adoptMemo(Long userId, Long memoId, MemoAdoptRequest request) {
+    public void adoptMemo(Long ownerId, Long memoId, MemoAdoptRequest request) {
 
         // 1. 메모 조회
         Memo memo = memoRepository.findById(memoId)
