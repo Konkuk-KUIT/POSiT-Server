@@ -68,15 +68,13 @@ public class OwnerController {
     @Operation(summary = "수신함 목록 조회", description = "답변이 달린 고민이나, 쿠폰 사용 알림 등을 조회합니다.")
     @GetMapping("/owner/inbox")
     public ApiResponse<List<InboxMemoResponse>> getInbox(
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal UserPrincipal user,
             @RequestParam String tab,
             @RequestParam(required = false) Long cursorId,
             @RequestParam(defaultValue = "10") int limit
     ) {
-        Long storeId = 1L; // 임시 storeId
-
         // 1. 서비스에서 Slice(데이터 뭉치)를 받음
-        Slice<InboxMemoResponse> result = ownerService.getInbox(storeId, tab, cursorId, limit);
+        Slice<InboxMemoResponse> result = ownerService.getInbox(user.getId(), tab, cursorId, limit);
 
         // 2. ApiResponse.success(Slice) 호출
         // -> data에는 List가, meta에는 페이징 정보가 자동으로 들어갑니다.

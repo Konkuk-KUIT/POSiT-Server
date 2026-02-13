@@ -23,6 +23,8 @@ import com.posit.posit.domain.user.entity.OwnerProfile;
 import com.posit.posit.domain.user.entity.User;
 import com.posit.posit.domain.user.repository.OwnerProfileRepository;
 import com.posit.posit.domain.user.repository.UserRepository;
+import com.posit.posit.global.error.CustomException;
+import com.posit.posit.global.error.ErrorCode;
 import org.springdoc.webmvc.core.service.RequestService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
@@ -132,9 +134,12 @@ public class OwnerService {
 
     // 3. 수신함 조회 (무한 스크롤 적용)
     @Transactional(readOnly = true)
-    public Slice<InboxMemoResponse> getInbox(Long storeId, String tab, Long cursorId, int limit) {
+    public Slice<InboxMemoResponse> getInbox(Long ownerId, String tab, Long cursorId, int limit) {
 
-        // 1. 다음 페이지 확인을 위해 limit + 1개 조회
+        Store store = storeRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
+        Long storeId = store.getId();
+
         Pageable pageable = PageRequest.of(0, limit + 1);
         List<Memo> memos;
 
