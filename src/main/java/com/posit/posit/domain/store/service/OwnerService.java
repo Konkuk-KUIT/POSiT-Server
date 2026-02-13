@@ -496,18 +496,21 @@ public class OwnerService {
     @Transactional(readOnly = true)
     public ConcernDetailResponse getConcernDetail(Long userId, Long concernId) {
 
-        // 1. 고민 조회
+        // 1. 고민글 조회 (사장님 본인 글인지 확인 권장)
         Concern concern = concernRepository.findById(concernId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 고민입니다."));
 
-        // 2. 권한 검증 (내 가게의 고민인지 확인)
-        // 사장님이 자기 글만 볼 수 있다면 필수, 누구나 볼 수 있다면 제거 가능
-//        if (!concern.getStore().getOwner().getId().equals(userId)) {
-//            throw new IllegalArgumentException("본인의 고민만 조회할 수 있습니다.");
-//        }
+        // (선택) 내 가게의 고민이 맞는지 검증 로직
+        if (!concern.getStore().getOwner().getId().equals(userId)) {
+            throw new IllegalArgumentException("본인의 고민글만 조회할 수 있습니다.");
+        }
 
-        // 3. DTO 변환 및 반환
-        return ConcernDetailResponse.from(concern);
+        // 2. 해당 고민에 달린 메모(답변)들 조회
+        // MemoRepository에 List<Memo> findByConcernId(Long concernId); 필요
+        List<Memo> memos = memoRepository.findByConcernIdOrderByCreatedAtDesc(concernId);
+
+        // 3. DTO 합체
+        return ConcernDetailResponse.of(concern, memos);
     }
 
     // 11. 쿠폰 템플릿 수정
@@ -601,6 +604,37 @@ public class OwnerService {
                 .items(couponItems)
                 .nextCursorId(nextCursorId)
                 .hasNext(hasNext)
+                .build();
+    }
+
+    //사장님이 올린 고민들 조회하기
+    public OwnerConcernListResponse getMyConcerns(Long userId, Long cursorId, int size) {
+
+        // 1. Repository 호출 (Object[] -> [Concern, Count])
+        Slice<Object[]> slice = concernRepository.findMyConcernsWithCount(
+                userId,
+                cursorId,
+                PageRequest.of(0, size)
+        );
+
+        // 2. DTO 변환
+        List<OwnerConcernListResponse.ConcernItem> items = slice.getContent().stream()
+                .map(row -> {
+                    Concern concern = (Concern) row[0];
+                    Long count = (Long) row[1];
+                    return OwnerConcernListResponse.ConcernItem.from(concern, count);
+                })
+                .collect(Collectors.toList());
+
+        // 3. 다음 커서 계산
+        Long nextCursor = null;
+        if (slice.hasNext() && !items.isEmpty()) {
+            nextCursor = items.get(items.size() - 1).getConcernId();
+        }
+
+        return OwnerConcernListResponse.builder()
+                .concerns(items)
+                .nextCursorId(nextCursor)
                 .build();
     }
 }
