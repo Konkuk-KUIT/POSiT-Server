@@ -1,7 +1,6 @@
 package com.posit.posit.domain.store.controller;
 
 import com.posit.posit.domain.coupon.dto.request.CouponTemplateUpdateRequest;
-import com.posit.posit.domain.coupon.dto.request.CouponUseRequest;
 import com.posit.posit.domain.coupon.dto.response.CouponTemplateUpdateResponse;
 import com.posit.posit.domain.store.dto.request.*;
 import com.posit.posit.domain.store.dto.response.*;
@@ -116,18 +115,6 @@ public class OwnerController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    // 7. 쿠폰 사용 하기 (POST)
-    @Operation(summary = "쿠폰 사용 처리", description = "손님이 제시한 쿠폰을 사용 처리합니다.")
-    @PostMapping("/coupons/{couponId}/use")
-    public ResponseEntity<ApiResponse<String>> useCoupon(
-            @AuthenticationPrincipal UserPrincipal user,
-            @PathVariable Long couponId,
-            @RequestBody @Valid CouponUseRequest request // Body로 비밀번호 받기
-    ) {
-        ownerService.useCoupon(user.getId(), couponId, request);
-        return ResponseEntity.ok(ApiResponse.success("쿠폰 사용이 완료되었습니다."));
-    }
-
     // 0. 가게 등록
     @Operation(summary = "가게 등록", description = "사장님의 가게 정보를 등록합니다.")
     @PostMapping("/stores")
@@ -225,5 +212,17 @@ public class OwnerController {
 
         // ApiResponse.success(data, cursorId) -> 이 메서드는 이전에 만든 것 사용
         return ResponseEntity.ok(ApiResponse.success(response, response.getNextCursorId()));
+    }
+
+    // 가게 pin 번호 수정
+    @Operation(summary = "쿠폰 비밀번호 설정", description = "쿠폰 비밀번호를 설정, 수정합니다.")
+    @PatchMapping("/stores/{storeId}/pin")
+    public ResponseEntity<ApiResponse<Void>> updatePin(
+            @AuthenticationPrincipal UserPrincipal user,
+            @PathVariable Long storeId,
+            @RequestBody @Valid StorePinUpdateRequest request
+    ) {
+        ownerService.updateStorePin(user.getId(), storeId, request);
+        return ResponseEntity.ok(ApiResponse.success());
     }
 }

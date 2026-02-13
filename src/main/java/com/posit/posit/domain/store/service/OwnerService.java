@@ -1,7 +1,6 @@
 package com.posit.posit.domain.store.service;
 
 import com.posit.posit.domain.coupon.dto.request.CouponTemplateUpdateRequest;
-import com.posit.posit.domain.coupon.dto.request.CouponUseRequest;
 import com.posit.posit.domain.coupon.dto.response.CouponTemplateUpdateResponse;
 import com.posit.posit.domain.coupon.entity.CouponTemplate;
 import com.posit.posit.domain.coupon.entity.IssuedCoupon;
@@ -302,35 +301,6 @@ public class OwnerService {
                         .build())
                 .myConcerns(myConcernList) // 리스트 추가
                 .build();
-    }
-
-
-    // 6. 쿠폰 사용 처리 (직원 인증 포함)
-    @Transactional
-    public void useCoupon(Long userId, Long couponId, CouponUseRequest request) {
-
-        // 1. 쿠폰 조회
-        IssuedCoupon coupon = issuedCouponRepository.findById(couponId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 쿠폰입니다."));
-
-        // 2. 가게 정보 조회
-        Store store = coupon.getStore();
-
-        // 3. [핵심] 비밀번호(PIN) 검증
-        String storedHash = store.getCouponPinHash(); // DB에 저장된 암호화된 비밀번호
-
-        // 3-1. 가게에 비밀번호가 설정되어 있지 않은 경우
-        if (storedHash == null || storedHash.isBlank()) {
-            throw new IllegalStateException("매장에 직원 확인 비밀번호가 설정되지 않았습니다.");
-        }
-
-        // 3-2. 입력받은 비밀번호와 DB 해시값 비교
-        if (!passwordEncoder.matches(request.getPassword(), storedHash)) {
-            throw new IllegalArgumentException("직원 확인 비밀번호가 일치하지 않습니다.");
-        }
-
-        // 4. 검증 통과 -> 쿠폰 사용 처리 (상태 변경)
-        coupon.use();
     }
 
     // 가게 등록
