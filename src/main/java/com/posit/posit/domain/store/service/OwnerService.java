@@ -1,5 +1,6 @@
 package com.posit.posit.domain.store.service;
 
+import com.posit.posit.domain.concern.entity.ConcernStatus;
 import com.posit.posit.domain.coupon.dto.request.CouponTemplateUpdateRequest;
 import com.posit.posit.domain.coupon.dto.response.CouponTemplateUpdateResponse;
 import com.posit.posit.domain.coupon.entity.CouponTemplate;
@@ -99,24 +100,18 @@ public class OwnerService {
 
     //고민 등록
     @Transactional
-    public Long createConcern(Long userId, Long storeId, ConcernCreateRequest request) {
+    public Long createConcern(Long ownerId, ConcernCreateRequest request) {
 
         // 1. 가게 조회
-        Store store = storeRepository.findById(storeId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 가게입니다."));
-
-        // [검증] 요청한 사람이 진짜 이 가게 주인인가? (Store 테이블 owner_id 확인)
-        // (Store 엔티티에 getOwner()나 getOwnerId()가 있다고 가정)
-        // if (!store.getOwner().getId().equals(userId)) {
-        //    throw new IllegalArgumentException("본인의 가게에만 고민을 등록할 수 있습니다.");
-        // }
+        Store store = storeRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
 
         // 2. 쿠폰 템플릿 조회
         CouponTemplate template = couponTemplateRepository.findById(request.getTemplateId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 쿠폰 템플릿입니다."));
 
         // [검증] 이 쿠폰 템플릿을 이 사장님이 만든 게 맞는가?
-        if (!template.getCreatedBy().getId().equals(userId)) {
+        if (!template.getCreatedBy().getId().equals(ownerId)) {
             throw new IllegalArgumentException("본인이 생성한 쿠폰 템플릿만 사용할 수 있습니다.");
         }
 
@@ -125,6 +120,7 @@ public class OwnerService {
                 .store(store)
                 .template(template)
                 .content(request.getContent())
+                .status(ConcernStatus.OPEN)
                 .build();
 
         // 4. 저장

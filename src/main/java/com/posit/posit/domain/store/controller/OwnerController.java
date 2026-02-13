@@ -50,14 +50,13 @@ public class OwnerController {
 
     // 3. 고민 등록
     @Operation(summary = "고민 등록", description = "가게에 대한 고민글을 작성합니다.")
-    @PostMapping("/stores/{storeId}/concerns")
+    @PostMapping("/stores/concerns")
     public ResponseEntity<ApiResponse<Long>> createConcern(
-            @PathVariable Long storeId,
             @AuthenticationPrincipal UserPrincipal user,
             @RequestBody @Valid ConcernCreateRequest request
     ) {
         // user.getId()를 넘겨서 서비스에서 본인 확인을 하게 합니다.
-        Long concernId = ownerService.createConcern(user.getId(), storeId, request);
+        Long concernId = ownerService.createConcern(user.getId(), request);
 
         return ResponseEntity.ok(ApiResponse.success(concernId));
     }
