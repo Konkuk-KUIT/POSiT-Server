@@ -12,6 +12,7 @@ public record MapStoreDetailResponse(
         StoreType category,
         String typeCode,
         String description,
+        String phone,
         String statusCode,
         String openTime,
         Weekday notOpen,

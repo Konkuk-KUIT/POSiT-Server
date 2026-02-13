@@ -259,6 +259,7 @@ public class MapService {
                 store.getCategory(),
                 typeCode,
                 store.getDescription(),
+                store.getPhone(),
                 statusCode,
                 store.getOpenTime(),
                 store.getNotOpen() == null ? null : store.getNotOpen(),
