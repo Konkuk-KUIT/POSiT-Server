@@ -216,13 +216,22 @@ public class OwnerController {
 
     // 가게 pin 번호 수정
     @Operation(summary = "쿠폰 비밀번호 설정", description = "쿠폰 비밀번호를 설정, 수정합니다.")
-    @PatchMapping("/stores/{storeId}/pin")
+    @PatchMapping("/owner/coupon-pin")
     public ResponseEntity<ApiResponse<Void>> updatePin(
             @AuthenticationPrincipal UserPrincipal user,
-            @PathVariable Long storeId,
             @RequestBody @Valid StorePinUpdateRequest request
     ) {
-        ownerService.updateStorePin(user.getId(), storeId, request);
+        ownerService.updateStorePin(user.getId(), request);
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @Operation(summary = "현재 쿠폰 비밀번호 검증", description = "현재 쿠폰 비밀번호를 검증합니다.")
+    @PostMapping("/owner/coupon-pin/verify")
+    public ResponseEntity<ApiResponse<Void>> verifyPin(
+            @AuthenticationPrincipal UserPrincipal user,
+            @RequestBody @Valid StorePinVerifyRequest request
+    ) {
+        ownerService.verifyStorePin(user.getId(), request);
         return ResponseEntity.ok(ApiResponse.success());
     }
 }

@@ -425,22 +425,36 @@ public class OwnerService {
 
     // 가게 PIN 번호 수정
     @Transactional
-    public void updateStorePin(Long userId, Long storeId, StorePinUpdateRequest request) {
+    public void updateStorePin(Long ownerId, StorePinUpdateRequest request) {
 
         // 1. 가게 조회
-        Store store = storeRepository.findById(storeId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 가게입니다."));
+        Store store = storeRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
 
-        // 2. 권한 검증 (내 가게가 맞는지?)
-        if (!store.getOwner().getId().equals(userId)) {
-            throw new IllegalArgumentException("본인의 가게 정보만 수정할 수 있습니다.");
+        if(store.getCouponPinHash() == null || store.getCouponPinHash().isBlank()) {
+            throw new IllegalArgumentException("가게 PIN이 아직 설정되지 않았습니다.");
         }
 
-        // 3. 비밀번호 암호화
-        String encodedPin = passwordEncoder.encode(request.getPin());
+        // 현재 PIN 검증
+        if (!passwordEncoder.matches(request.getCurrentPin(), store.getCouponPinHash())) {
+            throw new CustomException(ErrorCode.INVALID_PIN);
+        }
 
-        // 4. 변경 사항 반영 (Dirty Checking)
+        String encodedPin = passwordEncoder.encode(request.getPin());
         store.updateCouponPin(encodedPin);
+    }
+
+    // 가게 PIN 번호 검증
+    @Transactional(readOnly = true)
+    public void verifyStorePin(Long ownerId, StorePinVerifyRequest request) {
+        Store store = storeRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
+        if (store.getCouponPinHash() == null || store.getCouponPinHash().isBlank()) {
+            throw new IllegalArgumentException("가게 핀이 아직 설정되지 않았습니다.");
+        }
+        if (!passwordEncoder.matches(request.currentPin(), store.getCouponPinHash())) {
+            throw new CustomException(ErrorCode.INVALID_PIN);
+        }
     }
 
     // 고민 수정
