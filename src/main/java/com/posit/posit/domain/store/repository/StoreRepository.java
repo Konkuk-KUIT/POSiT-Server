@@ -1,6 +1,7 @@
 package com.posit.posit.domain.store.repository;
 
 import com.posit.posit.domain.store.entity.Store;
+import com.posit.posit.domain.user.entity.User;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -22,4 +23,5 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
 
     Optional<Store> findByOwnerId(Long ownerId);
 
+    Long owner(User owner);
 }

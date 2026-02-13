@@ -79,7 +79,7 @@ public class OwnerController {
     // 5-1. 답변 채택
     @Operation(summary = "답변 채택", description = "마음에 드는 답변(메모)을 채택하고 쿠폰을 발급합니다.")
     @PostMapping("/memos/{memoId}/adopt")
-    public ResponseEntity<ApiResponse<String>> adoptMemo(
+    public ResponseEntity<ApiResponse<ConcernAdoptResponse>> adoptMemo(
             @AuthenticationPrincipal UserPrincipal user,
             @PathVariable Long memoId,
             @RequestBody @Valid MemoAdoptRequest request
@@ -197,7 +197,7 @@ public class OwnerController {
     }
 
     //고민들 조회
-    @Operation(summary = "내가 올린 고민 목록 조회", description = "사장님이 작성한 고민 목록을 무한 스크롤로 조회합니다. (제목 자동 생성)")
+    @Operation(summary = "내가 올린 고민 목록 조회", description = "사장님이 작성한 고민 목록을 무한 스크롤로 조회합니다.")
     @GetMapping("/concerns/mine")
     public ResponseEntity<ApiResponse<OwnerConcernListResponse>> getMyConcerns(
             @AuthenticationPrincipal UserPrincipal user,
