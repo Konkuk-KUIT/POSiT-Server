@@ -89,6 +89,7 @@ public class MemoService {
                 .content(request.getContent())
                 .image(imageString)
                 .status(MemoStatus.REVIEWING) // 기본값
+                .ownerRead(false)
                 .build();
 
         memoRepository.save(memo);
@@ -145,7 +146,7 @@ public class MemoService {
                         .content(getPreview(memo.getContent())) // 미리보기 삽입
                         .status(memo.getStatus().name())
                         .createdAt(memo.getCreatedAt().toLocalDate().toString())
-                        .isRead(false) // DB 컬럼 부재로 false 고정
+                        .ownerRead(memo.isOwnerRead())
                         .build())
                 .collect(Collectors.toList());
 
