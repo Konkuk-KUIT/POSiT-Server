@@ -95,7 +95,7 @@ public class AuthService {
         }
 
         // 5) 토큰 발급 + refreshToken 저장
-        String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getName());
+        String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getRole().name());
         String refreshToken = jwtProvider.generateRefreshToken(user.getId());
 
         String hashed = jwtProvider.hashRefreshToken(refreshToken);
@@ -116,7 +116,7 @@ public class AuthService {
         if (!passwordEncoder.matches(req.password(), user.getPassword())) {
             throw new CustomException(ErrorCode.INVALID_PASSWORD);
         }
-        String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getName());
+        String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getRole().name());
         String refreshToken = jwtProvider.generateRefreshToken(user.getId());
 
         String hashed = jwtProvider.hashRefreshToken(refreshToken);
@@ -147,7 +147,7 @@ public class AuthService {
 
         User user = current.getUser();
 
-        String newAccess = jwtProvider.generateAccessToken(user.getId(), user.getName());
+        String newAccess = jwtProvider.generateAccessToken(user.getId(), user.getRole().name());
         String newRefresh = jwtProvider.generateRefreshToken(user.getId());
 
         tokenRepository.save(AuthRefreshToken.issue(
