@@ -50,16 +50,12 @@ public class OwnerController {
 
     // 3. 고민 등록
     @Operation(summary = "고민 등록", description = "가게에 대한 고민글을 작성합니다.")
-    @PostMapping("/stores/{storeId}/concerns")
-    public ResponseEntity<ApiResponse<Long>> createConcern(
-            @PathVariable Long storeId,
+    @PostMapping("/stores/concerns")
+    public ResponseEntity<ApiResponse<ConcernCreateResponse>> createConcern(
             @AuthenticationPrincipal UserPrincipal user,
             @RequestBody @Valid ConcernCreateRequest request
     ) {
-        // user.getId()를 넘겨서 서비스에서 본인 확인을 하게 합니다.
-        Long concernId = ownerService.createConcern(user.getId(), storeId, request);
-
-        return ResponseEntity.ok(ApiResponse.success(concernId));
+        return ResponseEntity.ok(ApiResponse.success(ownerService.createConcern(user.getId(), request)));
     }
 
     // 4. 수신함 목록 조회
@@ -83,13 +79,12 @@ public class OwnerController {
     // 5-1. 답변 채택
     @Operation(summary = "답변 채택", description = "마음에 드는 답변(메모)을 채택하고 쿠폰을 발급합니다.")
     @PostMapping("/memos/{memoId}/adopt")
-    public ResponseEntity<ApiResponse<String>> adoptMemo(
+    public ResponseEntity<ApiResponse<ConcernAdoptResponse>> adoptMemo(
             @AuthenticationPrincipal UserPrincipal user,
             @PathVariable Long memoId,
             @RequestBody @Valid MemoAdoptRequest request
     ) {
-        ownerService.adoptMemo(user.getId(), memoId, request);
-        return ResponseEntity.ok(ApiResponse.success("채택 완료 및 쿠폰 발급 성공"));
+        return ResponseEntity.ok(ApiResponse.success(ownerService.adoptMemo(user.getId(), memoId, request)));
     }
 
     // 5-2. 답변 거절
@@ -108,10 +103,9 @@ public class OwnerController {
     @Operation(summary = "사장님 홈 화면 (대시보드)", description = "사장님 메인 화면에 필요한 정보들을 조회합니다.")
     @GetMapping("/owner/home")
     public ResponseEntity<ApiResponse<OwnerHomeResponse>> getOwnerHome(
-            @AuthenticationPrincipal UserPrincipal user,
-            @RequestParam Long storeId
+            @AuthenticationPrincipal UserPrincipal user
     ) {
-        OwnerHomeResponse response = ownerService.getOwnerHome(user.getId(), storeId);
+        OwnerHomeResponse response = ownerService.getOwnerHome(user.getId());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -201,7 +195,7 @@ public class OwnerController {
     }
 
     //고민들 조회
-    @Operation(summary = "내가 올린 고민 목록 조회", description = "사장님이 작성한 고민 목록을 무한 스크롤로 조회합니다. (제목 자동 생성)")
+    @Operation(summary = "내가 올린 고민 목록 조회", description = "사장님이 작성한 고민 목록을 무한 스크롤로 조회합니다.")
     @GetMapping("/concerns/mine")
     public ResponseEntity<ApiResponse<OwnerConcernListResponse>> getMyConcerns(
             @AuthenticationPrincipal UserPrincipal user,
