@@ -145,7 +145,7 @@ public class MemoService {
                         .content(getPreview(memo.getContent())) // 미리보기 삽입
                         .status(memo.getStatus().name())
                         .createdAt(memo.getCreatedAt().toLocalDate().toString())
-                        .isRead(false) // DB 컬럼 부재로 false 고정
+                        .ownerRead(false) // DB 컬럼 부재로 false 고정
                         .build())
                 .collect(Collectors.toList());
 

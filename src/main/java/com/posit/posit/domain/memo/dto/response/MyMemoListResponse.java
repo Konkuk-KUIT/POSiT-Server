@@ -20,6 +20,6 @@ public class MyMemoListResponse {
         private String content;      // 메모 내용
         private String status;       // REVIEWING, ADOPTED 등
         private String createdAt;    // 작성일
-        private boolean isRead;      // (DB에 없어서 false 고정)
+        private boolean ownerRead;      // (DB에 없어서 false 고정)
     }
 }
