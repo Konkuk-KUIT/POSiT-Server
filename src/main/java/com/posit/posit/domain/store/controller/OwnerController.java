@@ -163,6 +163,8 @@ public class OwnerController {
             @PathVariable Long concernId
     ) {
         ConcernDetailResponse response = ownerService.getConcernDetail(user.getId(), concernId);
+
+        // 상세 조회는 페이징이 없으므로 meta 없이 success 호출
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -186,16 +188,12 @@ public class OwnerController {
     @GetMapping("/memos/{memoId}")
     public ResponseEntity<ApiResponse<MemoDetailResponse>> getMemoDetail(
             @AuthenticationPrincipal UserPrincipal user,
-            @PathVariable Long memoId,
-            @RequestParam(required = false) String type // 검증용 (필수 아님)
+            @PathVariable Long memoId
     ) {
+        // 1. 서비스 호출 (이미 내부에서 권한/존재 여부 체크함)
         MemoDetailResponse response = ownerService.getMemoDetail(user.getId(), memoId);
 
-        // (선택 사항) 요청한 type과 실제 DB type이 다르면 에러 뱉기
-        if (type != null && !response.getMemoType().equals(type)) {
-            throw new IllegalArgumentException("요청하신 메모 타입과 실제 메모 타입이 일치하지 않습니다.");
-        }
-
+        // 2. 성공 응답
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -214,6 +212,20 @@ public class OwnerController {
         // 2. ApiResponse 생성
         // response 객체는 @JsonIgnore 때문에 cursor 정보가 JSON에서 빠져있음 (깔끔!)
         // 대신 getNextCursorId()로 값을 꺼내서 ApiResponse 껍데기에 전달
+        return ResponseEntity.ok(ApiResponse.success(response, response.getNextCursorId()));
+    }
+
+    //고민들 조회
+    @Operation(summary = "내가 올린 고민 목록 조회", description = "사장님이 작성한 고민 목록을 무한 스크롤로 조회합니다. (제목 자동 생성)")
+    @GetMapping("/concerns/mine")
+    public ResponseEntity<ApiResponse<OwnerConcernListResponse>> getMyConcerns(
+            @AuthenticationPrincipal UserPrincipal user,
+            @RequestParam(required = false) Long cursorId,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        OwnerConcernListResponse response = ownerService.getMyConcerns(user.getId(), cursorId, size);
+
+        // ApiResponse.success(data, cursorId) -> 이 메서드는 이전에 만든 것 사용
         return ResponseEntity.ok(ApiResponse.success(response, response.getNextCursorId()));
     }
 }
