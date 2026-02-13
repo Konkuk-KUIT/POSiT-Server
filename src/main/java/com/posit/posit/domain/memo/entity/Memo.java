@@ -54,6 +54,9 @@ public class Memo {
     @Column(name = "updated_at", insertable = false, updatable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "owner_read", nullable = false)
+    private boolean ownerRead;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "store_id", nullable = false, foreignKey = @ForeignKey(name = "fk_memo_store"))
     private Store store;
@@ -85,6 +88,12 @@ public class Memo {
         // freeType은 메모 타입이 'FREE'일 때만 수정 가능하도록 방어 로직 추가
         if (this.memoType == MemoType.FREE && freeType != null) {
             this.freeType = freeType;
+        }
+    }
+
+    public void markOwnerRead() {
+        if(!this.ownerRead) {
+            this.ownerRead = true;
         }
     }
 }
