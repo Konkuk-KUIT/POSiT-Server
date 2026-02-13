@@ -34,4 +34,8 @@ public record ApiResponse<T>(
                 Meta.from(slice)    // 페이징 정보는 meta로
         );
     }
+
+    public static <T> ApiResponse<T> success(T data, Long nextCursorId) {
+        return new ApiResponse<>(true, data, Meta.from(nextCursorId));
+    }
 }

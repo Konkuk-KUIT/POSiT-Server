@@ -208,8 +208,12 @@ public class OwnerController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Long cursorId
     ) {
+        // 1. Service 호출
         CouponManagementResponse response = ownerService.getCouponManagement(user.getId(), cursorId, size);
 
-        return ResponseEntity.ok(ApiResponse.success(response));
+        // 2. ApiResponse 생성
+        // response 객체는 @JsonIgnore 때문에 cursor 정보가 JSON에서 빠져있음 (깔끔!)
+        // 대신 getNextCursorId()로 값을 꺼내서 ApiResponse 껍데기에 전달
+        return ResponseEntity.ok(ApiResponse.success(response, response.getNextCursorId()));
     }
 }

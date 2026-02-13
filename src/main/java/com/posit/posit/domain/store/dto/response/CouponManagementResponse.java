@@ -1,6 +1,7 @@
 package com.posit.posit.domain.store.dto.response;
 
-import com.posit.posit.domain.coupon.entity.IssuedCoupon; // 발급된 쿠폰 엔티티 (가정)
+import com.fasterxml.jackson.annotation.JsonIgnore; // 👈 이 import 필수!
+import com.posit.posit.domain.coupon.entity.IssuedCoupon;
 import com.posit.posit.domain.coupon.entity.IssuedCouponStatus;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,7 +15,12 @@ public class CouponManagementResponse {
 
     private CouponSummary summary;
     private List<CouponItem> items;
+
+    // 👇 JSON 응답(data)에서는 숨기고, Controller에서만 꺼내 쓸 수 있게 설정
+    @JsonIgnore
     private Long nextCursorId;
+
+    @JsonIgnore
     private boolean hasNext;
 
     // --- 1. 통계 DTO ---
@@ -35,8 +41,8 @@ public class CouponManagementResponse {
         private String userName;
         private String couponTitle;
         private String couponThumbnailUrl;
-        private int quantity; // 보통 1개
-        private String status; // USED, UNUSED
+        private int quantity;
+        private String status;
 
         public static CouponItem from(IssuedCoupon coupon) {
             return CouponItem.builder()
@@ -45,7 +51,7 @@ public class CouponManagementResponse {
                     .userName(coupon.getUser().getName())
                     .couponTitle(coupon.getTemplate().getTitle())
                     .couponThumbnailUrl(coupon.getTemplate().getImage())
-                    .quantity(1) // 기본 1개로 설정 (수량 컬럼이 있다면 그것 사용)
+                    .quantity(1)
                     .status(coupon.getStatus().name())
                     .build();
         }

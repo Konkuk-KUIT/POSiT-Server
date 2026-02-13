@@ -336,13 +336,24 @@ public class OwnerService {
         User owner = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        // 2. 사장님 프로필에서 '사업자 번호' 가져오기
+        // 2. 사장님 프로필 확인
         OwnerProfile profile = ownerProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사장님 프로필(사업자 정보)이 존재하지 않습니다. 먼저 사업자 인증을 진행해주세요."));
         String businessNumber = profile.getBusinessNumber();
 
-        // 3. 데이터 가공
-        // 영업시간 포맷팅 "10:00-22:00"
+        // 3. [수정] 주소 데이터 가공 (도로명/지번 + 상세주소 합치기)
+        String roadAddr = request.getAddress().getRoadAddress();
+        String detailAddr = request.getAddress().getDetailAddress(); // 사용자 입력 상세주소 (예: 101호)
+        if (detailAddr == null) detailAddr = ""; // null 방지
+
+        // API 호출 (좌표 + 지번주소)
+        GeocodingService.GeoResult geoResult = geocodingService.getGeoData(roadAddr);
+
+        // 주소 뒤에 상세주소를 붙임
+        String fullRoadAddr = roadAddr + " " + detailAddr;                 // 도로명 + 상세
+        String fullLotAddr = geoResult.getLotAddress() + " " + detailAddr; // 지번 + 상세
+
+        // 영업시간 포맷팅
         String fullOpenTime = request.getOperation().getOpenTime() + "-" + request.getOperation().getCloseTime();
 
         // 휴무일
@@ -351,12 +362,8 @@ public class OwnerService {
             notOpenDay = request.getOperation().getRegularHolidays().get(0);
         }
 
-        // 직원 확인 비밀번호 암호화
+        // 비밀번호 암호화
         String encodedPin = passwordEncoder.encode(request.getCouponPin());
-
-        // [변경] 도로명 주소로 좌표 구하기 (서버가 카카오 API 호출)
-        String roadAddr = request.getAddress().getRoadAddress();
-        GeocodingService.Coordinate coordinate = geocodingService.getCoordinate(roadAddr);
 
         // 4. Store 엔티티 생성 및 저장
         Store store = Store.builder()
@@ -366,12 +373,13 @@ public class OwnerService {
                 .description(request.getDescription())
                 .category(StoreType.CAFE)
                 .businessNumber(businessNumber)
-                .roadAddress(roadAddr) // 도로명 주소
-                .lotAddress(request.getAddress().getDetailAddress()) // 상세 주소
 
-                // [변경] API로 찾아낸 좌표를 BigDecimal로 변환하여 저장
-                .latitude(BigDecimal.valueOf(coordinate.getLat()))
-                .longitude(BigDecimal.valueOf(coordinate.getLon()))
+                //상세주소까지 합쳐진 풀 주소 저장
+                .roadAddress(fullRoadAddr)
+                .lotAddress(fullLotAddr)
+
+                .latitude(BigDecimal.valueOf(geoResult.getLat()))
+                .longitude(BigDecimal.valueOf(geoResult.getLon()))
 
                 .openTime(fullOpenTime)
                 .notOpen(notOpenDay)
@@ -381,7 +389,7 @@ public class OwnerService {
 
         storeRepository.save(store);
 
-        // TYPE 필터 연결해서 저장
+        // TYPE 필터 연결
         if(request.getType() != null) {
             Filter typeFilter = filterRepository
                     .findByCategoryAndCode("TYPE", request.getType())
@@ -394,7 +402,7 @@ public class OwnerService {
             storeFilterRepository.save(storeFilter);
         }
 
-        // 5. 가게 이미지 저장
+        // 5. 이미지 저장
         if (request.getImageUrls() != null) {
             int order = 1;
             for (String url : request.getImageUrls()) {
@@ -425,7 +433,6 @@ public class OwnerService {
         // 7. 편의시설 저장
         if (request.getConvinces() != null) {
             for (String code : request.getConvinces()) {
-                // "string" 같은 없는 코드가 들어오면 에러
                 Convince convince = convinceRepository.findByCode(code)
                         .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 편의시설 코드입니다: " + code));
 
