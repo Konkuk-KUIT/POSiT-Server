@@ -32,7 +32,6 @@ public class OwnerController {
             @AuthenticationPrincipal UserPrincipal user, // 로그인한 사장님 정보
             @RequestBody @Valid CouponTemplateCreateRequest request
     ) {
-        // user.getId()를 넘김
         Long templateId = ownerService.createCouponTemplate(user.getId(), request);
         return ResponseEntity.ok(ApiResponse.success(templateId));
     }
@@ -90,13 +89,12 @@ public class OwnerController {
     // 5-2. 답변 거절
     @Operation(summary = "답변 거절", description = "마음에 들지 않는 답변(메모)을 거절 처리합니다.")
     @PostMapping("/memos/{memoId}/reject")
-    public ResponseEntity<ApiResponse<String>> rejectMemo(
+    public ResponseEntity<ApiResponse<ConcernRejectResponse>> rejectMemo(
             @AuthenticationPrincipal UserPrincipal user,
             @PathVariable Long memoId,
             @RequestBody @Valid MemoRejectRequest request
     ) {
-        ownerService.rejectMemo(user.getId(), memoId, request);
-        return ResponseEntity.ok(ApiResponse.success("거절 처리 완료"));
+        return ResponseEntity.ok(ApiResponse.success( ownerService.rejectMemo(user.getId(), memoId, request)));
     }
 
     // 6. 사장님 홈 화면 (대시보드)
