@@ -32,7 +32,6 @@ public class OwnerController {
             @AuthenticationPrincipal UserPrincipal user, // 로그인한 사장님 정보
             @RequestBody @Valid CouponTemplateCreateRequest request
     ) {
-        // user.getId()를 넘김
         Long templateId = ownerService.createCouponTemplate(user.getId(), request);
         return ResponseEntity.ok(ApiResponse.success(templateId));
     }
