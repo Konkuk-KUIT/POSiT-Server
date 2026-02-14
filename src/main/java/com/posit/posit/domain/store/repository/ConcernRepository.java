@@ -44,4 +44,13 @@ public interface ConcernRepository extends JpaRepository<Concern, Long> {
             @Param("cursorId") Long cursorId,
             Pageable pageable
     );
+
+    // 게스트용 (특정 가게의 고민 조회 - storeId 기준)
+    @Query("SELECT c, COUNT(m) FROM Concern c LEFT JOIN Memo m ON m.concern = c " +
+            "WHERE c.store.id = :storeId " +  // 여기가 변경됨 (owner.id -> store.id)
+            "AND (:cursorId IS NULL OR c.id < :cursorId) " +
+            "GROUP BY c ORDER BY c.id DESC")
+    Slice<Object[]> findStoreConcernsWithCount(@Param("storeId") Long storeId,
+                                               @Param("cursorId") Long cursorId,
+                                               Pageable pageable);
 }
