@@ -1,5 +1,6 @@
 package com.posit.posit.domain.user.controller;
 
+import com.posit.posit.domain.store.dto.response.OwnerConcernListResponse;
 import com.posit.posit.domain.user.dto.UserPrincipal;
 import com.posit.posit.domain.user.dto.request.UserUpdateRequest;
 import com.posit.posit.domain.user.dto.response.UserMyPageResponse;
@@ -39,5 +40,19 @@ public class UserController {
     ) {
         UserMyPageResponse response = userService.updateProfile(user.getId(), request);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(summary = "가게별 사장님 고민 조회 (게스트용)", description = "게스트가 특정 가게(storeId)의 사장님 고민 목록을 조회합니다.")
+    @GetMapping("/stores/{storeId}/concerns")
+    public ResponseEntity<ApiResponse<OwnerConcernListResponse>> getStoreConcerns(
+            @PathVariable Long storeId, // URL 경로에서 storeId 추출
+            @RequestParam(required = false) Long cursorId,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        // 서비스 호출
+        OwnerConcernListResponse response = userService.getStoreConcerns(storeId, cursorId, size);
+
+        // 응답 반환
+        return ResponseEntity.ok(ApiResponse.success(response, response.getNextCursorId()));
     }
 }
