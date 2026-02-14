@@ -1,9 +1,9 @@
 package com.posit.posit.domain.store.dto.response;
 
+import com.posit.posit.domain.memo.entity.MemoStatus;
+
 public record ConcernAdoptResponse(
-        String concernTitle,
-        String writer,
-        String adoptedAt,
-        String reward
+        Long memoId,
+        MemoStatus status
 ) {
 }

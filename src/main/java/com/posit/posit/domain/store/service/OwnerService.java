@@ -233,7 +233,7 @@ public class OwnerService {
         String writer = (memo.getUser() != null) ? memo.getUser().getName() : null;
         String adoptedAt = LocalDateTime.now().toString();
         String reward = template.getTitle();
-        return new ConcernAdoptResponse(concernTitle, writer, adoptedAt, reward);
+        return new ConcernAdoptResponse(memoId, memo.getStatus());
     }
 
     // 5-2. 답변 거절 (REJECT)
@@ -275,6 +275,30 @@ public class OwnerService {
         String rejectedAt = LocalDateTime.now().toString();
 
         return new ConcernRejectResponse(concernTitle, writer, rejectedAt);
+    }
+
+    @Transactional
+    public AdoptionResultResponse getAdoptionResult(Long ownerId, Long memoId) {
+        Store store = storeRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
+        Memo memo = memoRepository.findById(memoId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 메모입니다"));
+        if (memo.getStore() == null || memo.getStore().getId() == null || !memo.getStore().getId().equals(store.getId())) {
+            throw new IllegalArgumentException("해당 매장의 메모가 아닙니다");
+        }
+        if (memo.getStatus() != MemoStatus.ADOPTED) {
+            throw new IllegalArgumentException("채택된 메모가 아닙니다");
+        }
+        Decision decision = decisionRepository.findByMemoId(memoId)
+                .orElseThrow(() -> new IllegalArgumentException("채택 정보가 없습니다"));
+        if (decision.getType() != DecisionType.ADOPT) {
+            throw new IllegalStateException("채택(ADOPT) 결정이 아닙니다.");
+        }
+        String writer = (memo.getUser() != null) ? memo.getUser().getLoginId() : null;
+        String concernTitle = (memo.getConcern() != null) ? memo.getConcern().getContent() : null;
+        String adoptedAt = (decision.getCreatedAt() != null) ? decision.getCreatedAt().toString() : null;
+        String reward = (decision.getCouponTemplate().getTitle() != null) ? decision.getCouponTemplate().getTitle() : null;
+        return AdoptionResultResponse.of(concernTitle, writer, adoptedAt, reward);
     }
 
     // 5. 사장님 홈 화면 조회

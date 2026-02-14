@@ -2,6 +2,7 @@ package com.posit.posit.domain.store.controller;
 
 import com.posit.posit.domain.coupon.dto.request.CouponTemplateUpdateRequest;
 import com.posit.posit.domain.coupon.dto.response.CouponTemplateUpdateResponse;
+import com.posit.posit.domain.memo.service.MemoService;
 import com.posit.posit.domain.store.dto.request.*;
 import com.posit.posit.domain.store.dto.response.*;
 import com.posit.posit.domain.store.service.OwnerService;
@@ -24,6 +25,7 @@ import java.util.List;
 public class OwnerController {
 
     private final OwnerService ownerService;
+    private final MemoService memoService;
 
     // 1. 쿠폰 템플릿 등록
     @Operation(summary = "쿠폰 템플릿 등록", description = "사장님이 발급할 쿠폰의 템플릿(종류)을 등록합니다.")
@@ -225,5 +227,14 @@ public class OwnerController {
     ) {
         ownerService.verifyStorePin(user.getId(), request);
         return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @Operation(summary = "채택 후 화면", description = "포짓 채택 후 화면 조회에 필요한 엔드포인트입니다.")
+    @GetMapping("/memos/{memoId}/adoption")
+    public ResponseEntity<ApiResponse<AdoptionResultResponse>> adoptionResult(
+            @AuthenticationPrincipal UserPrincipal user,
+            @PathVariable Long memoId
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(ownerService.getAdoptionResult(user.getId(), memoId)));
     }
 }
