@@ -2,6 +2,7 @@ package com.posit.posit.domain.store.dto.response;
 
 import com.posit.posit.domain.memo.entity.Memo;
 import com.posit.posit.domain.memo.entity.MemoType;
+import com.posit.posit.domain.user.entity.Gender;
 import com.posit.posit.domain.user.entity.User;
 import lombok.Builder;
 import lombok.Getter;
@@ -61,8 +62,8 @@ public class MemoDetailResponse {
 
         // --- 3. [추가] 나이/성별 계산 로직 ---
         String gender = "알수없음";
-        if ("F".equals(user.getGender())) gender = "여성";
-        else if ("M".equals(user.getGender())) gender = "남성";
+        if (Gender.FEMALE.equals(user.getGender())) gender = "여성";
+        else if (Gender.MALE.equals(user.getGender())) gender = "남성";
 
         int age = 0;
         if (user.getBirth() != null) {
@@ -84,8 +85,8 @@ public class MemoDetailResponse {
                 .status(memo.getStatus().name())
                 .createdAt(memo.getCreatedAt())
                 .writer(WriterInfo.builder()
-                        .name(user.getName()) // 화면엔 이름이 나을 것 같아 getName() 사용 (기존 loginId 원하시면 변경 가능)
-                        .profile(profileStr)  // ★ 추가된 프로필 정보
+                        .name(user.getLoginId())
+                        .profile(profileStr)
                         .build())
                 .build();
     }

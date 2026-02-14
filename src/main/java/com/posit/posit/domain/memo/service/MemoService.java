@@ -89,6 +89,7 @@ public class MemoService {
                 .content(request.getContent())
                 .image(imageString)
                 .status(MemoStatus.REVIEWING) // 기본값
+                .ownerRead(false)
                 .build();
 
         memoRepository.save(memo);
@@ -110,12 +111,26 @@ public class MemoService {
             throw new IllegalArgumentException("메모를 수정할 권한이 없습니다.");
         }
 
-        // 3. 수정 (Entity 메서드 호출)
+        if (memo.getStatus() == MemoStatus.ADOPTED || memo.getStatus() == MemoStatus.REJECTED) {
+            throw new IllegalStateException("거절되거나 채택된 메모는 수정할 수 없습니다.");
+        }
+
+        String newTitle = (request.getTitle() != null) ? request.getTitle() : memo.getTitle();
+        String newContent = (request.getContent() != null) ? request.getContent() : memo.getContent();
+        String newImageUrl = (request.getImageUrl() != null) ? request.getImageUrl() : memo.getImage();
+
+        var newFreeType = memo.getFreeType();
+        if (memo.getMemoType() == MemoType.FREE) {
+            if (request.getFreeType() != null) {
+                newFreeType = request.getFreeType();
+            }
+        }
+
         memo.update(
-                request.getTitle(),
-                request.getContent(),
-                request.getImageUrl(),
-                request.getFreeType()
+                newTitle,
+                newContent,
+                newImageUrl,
+                newFreeType
         );
 
         // 4. 응답 반환 (Transactional 덕분에 자동 저장됨)
@@ -145,7 +160,7 @@ public class MemoService {
                         .content(getPreview(memo.getContent())) // 미리보기 삽입
                         .status(memo.getStatus().name())
                         .createdAt(memo.getCreatedAt().toLocalDate().toString())
-                        .isRead(false) // DB 컬럼 부재로 false 고정
+                        .ownerRead(memo.isOwnerRead())
                         .build())
                 .collect(Collectors.toList());
 

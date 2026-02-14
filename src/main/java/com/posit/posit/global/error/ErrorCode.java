@@ -51,7 +51,8 @@ public enum ErrorCode {
     // -------------------------------------------------
     // Other validation
     // -------------------------------------------------
-    INVALID_PASSWORD(HttpStatus.BAD_REQUEST, 40003, "유효하지 않는 비밀번호입니다.");
+    INVALID_PASSWORD(HttpStatus.BAD_REQUEST, 40003, "유효하지 않는 비밀번호입니다."),
+    INVALID_PIN(HttpStatus.BAD_REQUEST, 40004, "PIN 비밀번호가 일치하지 않습니다.");
     private final HttpStatus httpStatus;
     private final int code;
     private final String message;

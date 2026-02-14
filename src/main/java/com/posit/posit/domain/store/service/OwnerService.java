@@ -1,7 +1,7 @@
 package com.posit.posit.domain.store.service;
 
+import com.posit.posit.domain.concern.entity.ConcernStatus;
 import com.posit.posit.domain.coupon.dto.request.CouponTemplateUpdateRequest;
-import com.posit.posit.domain.coupon.dto.request.CouponUseRequest;
 import com.posit.posit.domain.coupon.dto.response.CouponTemplateUpdateResponse;
 import com.posit.posit.domain.coupon.entity.CouponTemplate;
 import com.posit.posit.domain.coupon.entity.IssuedCoupon;
@@ -23,6 +23,8 @@ import com.posit.posit.domain.user.entity.OwnerProfile;
 import com.posit.posit.domain.user.entity.User;
 import com.posit.posit.domain.user.repository.OwnerProfileRepository;
 import com.posit.posit.domain.user.repository.UserRepository;
+import com.posit.posit.global.error.CustomException;
+import com.posit.posit.global.error.ErrorCode;
 import org.springdoc.webmvc.core.service.RequestService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
@@ -98,24 +100,17 @@ public class OwnerService {
 
     //고민 등록
     @Transactional
-    public Long createConcern(Long userId, Long storeId, ConcernCreateRequest request) {
-
+    public ConcernCreateResponse createConcern(Long ownerId, ConcernCreateRequest request) {
         // 1. 가게 조회
-        Store store = storeRepository.findById(storeId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 가게입니다."));
-
-        // [검증] 요청한 사람이 진짜 이 가게 주인인가? (Store 테이블 owner_id 확인)
-        // (Store 엔티티에 getOwner()나 getOwnerId()가 있다고 가정)
-        // if (!store.getOwner().getId().equals(userId)) {
-        //    throw new IllegalArgumentException("본인의 가게에만 고민을 등록할 수 있습니다.");
-        // }
+        Store store = storeRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
 
         // 2. 쿠폰 템플릿 조회
         CouponTemplate template = couponTemplateRepository.findById(request.getTemplateId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 쿠폰 템플릿입니다."));
 
         // [검증] 이 쿠폰 템플릿을 이 사장님이 만든 게 맞는가?
-        if (!template.getCreatedBy().getId().equals(userId)) {
+        if (!template.getCreatedBy().getId().equals(ownerId)) {
             throw new IllegalArgumentException("본인이 생성한 쿠폰 템플릿만 사용할 수 있습니다.");
         }
 
@@ -124,17 +119,22 @@ public class OwnerService {
                 .store(store)
                 .template(template)
                 .content(request.getContent())
+                .status(ConcernStatus.OPEN)
                 .build();
 
         // 4. 저장
-        return concernRepository.save(concern).getId();
+        concernRepository.save(concern);
+        return new ConcernCreateResponse(concern.getId(), store.getId(), template.getId());
     }
 
     // 3. 수신함 조회 (무한 스크롤 적용)
     @Transactional(readOnly = true)
-    public Slice<InboxMemoResponse> getInbox(Long storeId, String tab, Long cursorId, int limit) {
+    public Slice<InboxMemoResponse> getInbox(Long ownerId, String tab, Long cursorId, int limit) {
 
-        // 1. 다음 페이지 확인을 위해 limit + 1개 조회
+        Store store = storeRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
+        Long storeId = store.getId();
+
         Pageable pageable = PageRequest.of(0, limit + 1);
         List<Memo> memos;
 
@@ -173,11 +173,16 @@ public class OwnerService {
 
     // 5-1. 답변 채택 (ADOPT)
     @Transactional
-    public void adoptMemo(Long userId, Long memoId, MemoAdoptRequest request) {
-
+    public ConcernAdoptResponse adoptMemo(Long ownerId, Long memoId, MemoAdoptRequest request) {
+        Store store = storeRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
         // 1. 메모 조회
         Memo memo = memoRepository.findById(memoId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 메모입니다."));
+
+        if (memo.getStore() == null || memo.getStore().getId() == null || !memo.getStore().getId().equals(store.getId())) {
+            throw new IllegalArgumentException("해당 매장의 메모가 아닙니다.");
+        }
 
         // [검증] 이미 처리된 메모인지 확인
         if (memo.getStatus() != MemoStatus.REVIEWING) {
@@ -187,6 +192,9 @@ public class OwnerService {
         // 2. 쿠폰 템플릿 조회
         CouponTemplate template = couponTemplateRepository.findById(request.getCouponTemplateId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 쿠폰 템플릿입니다."));
+        if (!template.getCreatedBy().getId().equals(ownerId)) {
+            throw new IllegalArgumentException("본인이 생성한 쿠폰 템플릿만 사용할 수 있습니다.");
+        }
 
         // 3. 메모 상태 변경
         memo.updateStatus(MemoStatus.ADOPTED);
@@ -198,14 +206,13 @@ public class OwnerService {
                 .store(memo.getStore())
                 .user(memo.getUser())
                 .memo(memo)
-                .template(template)  // [중요] 엔티티에 template FK가 있어서 넣어줘야 함
+                .template(template)
                 .title(template.getTitle())
                 .description(template.getDescription())
                 .image(template.getImage())
-                .condition("유효기간 내 사용") // Entity에 condition이 not null이라 값 필요
+                .condition("매장 방문 후 쿠폰 제시") // todo: 사용 조건??
                 .expiredAt(expiredAt)
                 .status(IssuedCouponStatus.ISSUED)
-                // .issuedAt() -> insertable=false이므로 DB가 자동 생성 (생략)
                 .build();
 
         issuedCouponRepository.save(issuedCoupon);
@@ -214,18 +221,37 @@ public class OwnerService {
         Decision decision = Decision.builder()
                 .memo(memo)
                 .type(DecisionType.ADOPT)
-                .couponTemplate(template) // 채택일 땐 어떤 템플릿인지 기록
+                .couponTemplate(template)
                 .message(request.getMessage())
                 .build();
 
         decisionRepository.save(decision);
+        String concernTitle = null;
+        if (memo.getConcern() != null) {
+            concernTitle = memo.getConcern().getContent();
+        }
+        String writer = (memo.getUser() != null) ? memo.getUser().getName() : null;
+        String adoptedAt = LocalDateTime.now().toString();
+        String reward = template.getTitle();
+        return new ConcernAdoptResponse(concernTitle, writer, adoptedAt, reward);
     }
 
     // 5-2. 답변 거절 (REJECT)
     @Transactional
-    public void rejectMemo(Long userId, Long memoId, MemoRejectRequest request) {
+    public ConcernRejectResponse rejectMemo(Long ownerId, Long memoId, MemoRejectRequest request) {
+        Store store = storeRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
         Memo memo = memoRepository.findById(memoId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 메모입니다."));
+        if (memo.getStore() == null || memo.getStore().getId() == null || !memo.getStore().getId().equals(store.getId())) {
+            throw new IllegalArgumentException("해당 매장의 메모가 아닙니다.");
+        }
+
+        if (memo.getStatus() != MemoStatus.REVIEWING) {
+            throw new IllegalStateException("이미 처리된 메모입니다.");
+        }
+
+        // 4. 상태 변경
 
         // 상태 변경
         memo.updateStatus(MemoStatus.REJECTED);
@@ -239,19 +265,26 @@ public class OwnerService {
                 .build();
 
         decisionRepository.save(decision);
-    }
 
-    // ... Dependencies (MemoRepository, IssuedCouponRepository, StoreRepository) ...
+        String concernTitle = null;
+        if (memo.getConcern() != null) {
+            concernTitle = memo.getConcern().getContent();
+        }
+
+        String writer = (memo.getUser() != null) ? memo.getUser().getName() : null;
+        String rejectedAt = LocalDateTime.now().toString();
+
+        return new ConcernRejectResponse(concernTitle, writer, rejectedAt);
+    }
 
     // 5. 사장님 홈 화면 조회
     @Transactional(readOnly = true)
-    public OwnerHomeResponse getOwnerHome(Long userId, Long storeId) {
+    public OwnerHomeResponse getOwnerHome(Long ownerId) {
 
         // 1. 가게 및 사장님 정보 조회
-        Store store = storeRepository.findById(storeId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 가게입니다."));
-
-        // 사장님 닉네임 (Store 엔티티가 User를 참조하고 있다고 가정)
+        Store store = storeRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
+        Long storeId = store.getId();
         // 만약 store.getOwner()가 없다면 userRepository.findById(userId)를 써야 함
         String nickname = store.getOwner().getName(); // 또는 getLoginId()
 
@@ -266,7 +299,7 @@ public class OwnerService {
         long newMemo = memoRepository.countByStoreIdAndStatus(storeId, MemoStatus.REVIEWING);
 
         // (4) 쿠폰 발행 수
-        long totalCount = issuedCouponRepository.countByUserId(userId);
+        long totalCount = issuedCouponRepository.countByUserId(ownerId);
 
 // (1) 최신 고민글 3개 가져오기
         List<Concern> recentConcerns = concernRepository.findTop3ByStoreIdOrderByCreatedAtDesc(storeId);
@@ -297,35 +330,6 @@ public class OwnerService {
                         .build())
                 .myConcerns(myConcernList) // 리스트 추가
                 .build();
-    }
-
-
-    // 6. 쿠폰 사용 처리 (직원 인증 포함)
-    @Transactional
-    public void useCoupon(Long userId, Long couponId, CouponUseRequest request) {
-
-        // 1. 쿠폰 조회
-        IssuedCoupon coupon = issuedCouponRepository.findById(couponId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 쿠폰입니다."));
-
-        // 2. 가게 정보 조회
-        Store store = coupon.getStore();
-
-        // 3. [핵심] 비밀번호(PIN) 검증
-        String storedHash = store.getCouponPinHash(); // DB에 저장된 암호화된 비밀번호
-
-        // 3-1. 가게에 비밀번호가 설정되어 있지 않은 경우
-        if (storedHash == null || storedHash.isBlank()) {
-            throw new IllegalStateException("매장에 직원 확인 비밀번호가 설정되지 않았습니다.");
-        }
-
-        // 3-2. 입력받은 비밀번호와 DB 해시값 비교
-        if (!passwordEncoder.matches(request.getPassword(), storedHash)) {
-            throw new IllegalArgumentException("직원 확인 비밀번호가 일치하지 않습니다.");
-        }
-
-        // 4. 검증 통과 -> 쿠폰 사용 처리 (상태 변경)
-        coupon.use();
     }
 
     // 가게 등록
@@ -450,22 +454,36 @@ public class OwnerService {
 
     // 가게 PIN 번호 수정
     @Transactional
-    public void updateStorePin(Long userId, Long storeId, StorePinUpdateRequest request) {
+    public void updateStorePin(Long ownerId, StorePinUpdateRequest request) {
 
         // 1. 가게 조회
-        Store store = storeRepository.findById(storeId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 가게입니다."));
+        Store store = storeRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
 
-        // 2. 권한 검증 (내 가게가 맞는지?)
-        if (!store.getOwner().getId().equals(userId)) {
-            throw new IllegalArgumentException("본인의 가게 정보만 수정할 수 있습니다.");
+        if(store.getCouponPinHash() == null || store.getCouponPinHash().isBlank()) {
+            throw new IllegalArgumentException("가게 PIN이 아직 설정되지 않았습니다.");
         }
 
-        // 3. 비밀번호 암호화
-        String encodedPin = passwordEncoder.encode(request.getPin());
+        // 현재 PIN 검증
+        if (!passwordEncoder.matches(request.getCurrentPin(), store.getCouponPinHash())) {
+            throw new CustomException(ErrorCode.INVALID_PIN);
+        }
 
-        // 4. 변경 사항 반영 (Dirty Checking)
+        String encodedPin = passwordEncoder.encode(request.getPin());
         store.updateCouponPin(encodedPin);
+    }
+
+    // 가게 PIN 번호 검증
+    @Transactional(readOnly = true)
+    public void verifyStorePin(Long ownerId, StorePinVerifyRequest request) {
+        Store store = storeRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
+        if (store.getCouponPinHash() == null || store.getCouponPinHash().isBlank()) {
+            throw new IllegalArgumentException("가게 핀이 아직 설정되지 않았습니다.");
+        }
+        if (!passwordEncoder.matches(request.currentPin(), store.getCouponPinHash())) {
+            throw new CustomException(ErrorCode.INVALID_PIN);
+        }
     }
 
     // 고민 수정
@@ -539,7 +557,7 @@ public class OwnerService {
     }
 
     // 12. 메모 상세 조회
-    @Transactional(readOnly = true)
+    @Transactional
     public MemoDetailResponse getMemoDetail(Long userId, Long memoId) { // type 제거!
 
         // 1. 메모 조회
@@ -551,6 +569,7 @@ public class OwnerService {
             throw new IllegalArgumentException("해당 메모를 조회할 권한이 없습니다.");
         }
 
+        memo.markOwnerRead();
 
         // 4. DTO 변환
         return MemoDetailResponse.from(memo);

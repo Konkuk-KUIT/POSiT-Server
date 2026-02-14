@@ -228,6 +228,4 @@ public class OwnerController {
         // ApiResponse.success(data, cursorId) -> 이 메서드는 이전에 만든 것 사용
         return ResponseEntity.ok(ApiResponse.success(response, response.getNextCursorId()));
     }
-
-
 }
