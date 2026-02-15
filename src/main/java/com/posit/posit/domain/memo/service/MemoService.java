@@ -7,10 +7,7 @@ import com.posit.posit.domain.memo.dto.response.MemoCreateResponse;
 import com.posit.posit.domain.memo.dto.response.MemoUpdateResponse;
 import com.posit.posit.domain.memo.dto.response.MyMemoDetailResponse;
 import com.posit.posit.domain.memo.dto.response.MyMemoListResponse;
-import com.posit.posit.domain.memo.entity.Decision;
-import com.posit.posit.domain.memo.entity.Memo;
-import com.posit.posit.domain.memo.entity.MemoStatus;
-import com.posit.posit.domain.memo.entity.MemoType;
+import com.posit.posit.domain.memo.entity.*;
 import com.posit.posit.domain.memo.repository.DecisionRepository;
 import com.posit.posit.domain.store.entity.Store;
 import com.posit.posit.domain.memo.repository.MemoRepository;
@@ -37,24 +34,23 @@ public class MemoService {
     private final UserRepository userRepository;
     private final com.posit.posit.domain.store.repository.ConcernRepository concernRepository;
 
+    @Transactional
     public MemoCreateResponse createMemo(Long userId, Long storeId, MemoCreateRequest request) {
 
-        // 1. 유저 & 가게 조회
+        // 1. 유저 & 가게 조회 (기존 동일)
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 가게입니다."));
 
-        // 2. 타입별 검증 및 Concern 설정
+        // 2. 타입별 검증 및 Concern 설정 (기존 동일)
         Concern concern = null;
 
         if (request.getMemoType() == MemoType.ANSWER) {
-            // [ANSWER] concernId 필수 검증
             if (request.getConcernId() == null) {
                 throw new IllegalArgumentException("답변(ANSWER) 작성 시 고민 ID(concernId)는 필수입니다.");
             }
-            // 고민 조회 및 가게 일치 여부 확인
             concern = concernRepository.findById(request.getConcernId())
                     .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 고민글입니다."));
 
@@ -62,42 +58,45 @@ public class MemoService {
                 throw new IllegalArgumentException("해당 고민은 이 가게의 고민이 아닙니다.");
             }
         } else if (request.getMemoType() == MemoType.FREE) {
-            // [FREE] freeType 필수 검증
             if (request.getFreeType() == null) {
                 throw new IllegalArgumentException("자유 메모(FREE) 작성 시 카테고리(freeType)는 필수입니다.");
             }
         }
 
-        // 3. 이미지 처리 (List -> Comma Separated String)
-        // DB에 image 컬럼이 하나이므로, 여러 장일 경우 콤마로 잇거나 첫 번째만 저장
-        String imageString = null;
-        if (request.getImages() != null && !request.getImages().isEmpty()) {
-            // 예: "key1,key2,key3" 형태로 변환
-            imageString = request.getImages().stream()
-                    .map(MemoCreateRequest.ImageDto::getImageKey)
-                    .collect(Collectors.joining(","));
-        }
-
-        // 4. 메모 엔티티 생성 및 저장
+        // 3. 메모 엔티티 생성 (이미지는 아직 비어있음)
         Memo memo = Memo.builder()
                 .store(store)
                 .user(user)
                 .memoType(request.getMemoType())
-                .concern(concern) // ANSWER면 값 있음, FREE면 null
-                .freeType(request.getFreeType()) // FREE면 값 있음, ANSWER면 null
+                .concern(concern)
+                .freeType(request.getFreeType())
                 .title(request.getTitle())
                 .content(request.getContent())
-                .image(imageString)
-                .status(MemoStatus.REVIEWING) // 기본값
+                // .image(imageString) <--- 삭제됨!
+                .status(MemoStatus.REVIEWING)
                 .ownerRead(false)
                 .build();
 
+        // 4. [수정됨] 이미지 처리 (DTO List -> Entity List)
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            List<MemoImage> memoImages = request.getImages().stream()
+                    .map(imageDto -> MemoImage.builder()
+                            .imageUrl(imageDto.getImageKey()) // DTO에서 Key 꺼냄
+                            .memo(memo) // ★ 중요: 양방향 연관관계 (자식 -> 부모)
+                            .build())
+                    .collect(Collectors.toList());
+
+            // 부모 엔티티에 자식 리스트 추가 (부모 -> 자식)
+            // Memo 엔티티에 cascade = CascadeType.ALL이 걸려있어서, memo만 저장해도 이미지가 같이 저장됨
+            memo.getImages().addAll(memoImages);
+        }
+
+        // 5. 저장 (Memo + MemoImage들이 한 번에 저장됨)
         memoRepository.save(memo);
 
-        // 5. 응답 반환
+        // 6. 응답 반환
         return MemoCreateResponse.from(memo);
     }
-
     // 2. 메모 수정
     @Transactional
     public MemoUpdateResponse updateMemo(Long userId, Long memoId, MemoUpdateRequest request) {
@@ -106,34 +105,45 @@ public class MemoService {
         Memo memo = memoRepository.findById(memoId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 메모입니다."));
 
-        // 2. 권한 검증 (작성자 본인인지?)
+        // 2. 권한 검증
         if (!memo.getUser().getId().equals(userId)) {
             throw new IllegalArgumentException("메모를 수정할 권한이 없습니다.");
         }
 
+        // 3. 상태 검증 (채택/거절된 건 수정 불가)
         if (memo.getStatus() == MemoStatus.ADOPTED || memo.getStatus() == MemoStatus.REJECTED) {
-            throw new IllegalStateException("거절되거나 채택된 메모는 수정할 수 없습니다.");
+            throw new IllegalStateException("이미 처리된(거절/채택) 메모는 수정할 수 없습니다.");
         }
 
-        String newTitle = (request.getTitle() != null) ? request.getTitle() : memo.getTitle();
-        String newContent = (request.getContent() != null) ? request.getContent() : memo.getContent();
-        String newImageUrl = (request.getImageUrl() != null) ? request.getImageUrl() : memo.getImage();
-
-        var newFreeType = memo.getFreeType();
-        if (memo.getMemoType() == MemoType.FREE) {
-            if (request.getFreeType() != null) {
-                newFreeType = request.getFreeType();
-            }
-        }
-
+        // 4. 텍스트 정보 수정 (Entity 내부 메서드 활용)
+        // (Entity의 update 메서드 내부에서 null 체크를 하고 있으므로 그대로 넘겨도 됨)
         memo.update(
-                newTitle,
-                newContent,
-                newImageUrl,
-                newFreeType
+                request.getTitle(),
+                request.getContent(),
+                request.getFreeType()
         );
 
-        // 4. 응답 반환 (Transactional 덕분에 자동 저장됨)
+        // 5. [핵심] 이미지 리스트 수정 (갈아끼우기 전략)
+        // 요청에 imageKeys가 null이면 "이미지 수정 안 함(유지)"으로 간주
+        // 빈 리스트([])가 오면 "이미지 모두 삭제"로 간주
+        if (request.getImageKeys() != null) {
+
+            // 5-1. 기존 이미지 삭제 (orphanRemoval 덕분에 DB에서도 DELETE 쿼리 나감)
+            memo.getImages().clear();
+
+            // 5-2. 새 이미지 리스트 생성
+            List<MemoImage> newImages = request.getImageKeys().stream()
+                    .map(key -> MemoImage.builder()
+                            .imageUrl(key)
+                            .memo(memo) // 연관관계 설정
+                            .build())
+                    .collect(Collectors.toList());
+
+            // 5-3. 새 이미지 등록
+            memo.getImages().addAll(newImages);
+        }
+
+        // 6. 응답 반환 (Transactional이 끝나면서 UPDATE 쿼리 실행됨)
         return MemoUpdateResponse.from(memo);
     }
 
@@ -188,13 +198,14 @@ public class MemoService {
 
     private final DecisionRepository decisionRepository;
 
+
     @Transactional(readOnly = true)
     public MyMemoDetailResponse getMemoDetail(Long userId, Long memoId) {
         // 1. 메모 조회 (내 아이디와 일치하는지 확인)
         Memo memo = memoRepository.findByIdAndUser_Id(memoId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("메모를 찾을 수 없습니다."));
 
-        // 2. 사장님 고민 내용 가져오기 (고민 답변인 경우)
+        // 2. 사장님 고민 내용 가져오기
         String concernContent = null;
         if (memo.getConcern() != null) {
             concernContent = memo.getConcern().getContent();
@@ -207,17 +218,23 @@ public class MemoService {
             ownerReply = decision.get().getMessage();
         }
 
-        // 4. DTO 변환
+        // 4. [추가] 이미지 리스트 변환 (MemoImage 엔티티 -> String URL)
+        List<String> imageUrls = memo.getImages().stream()
+                .map(MemoImage::getImageUrl) // 이미지 객체에서 URL만 추출
+                .collect(Collectors.toList());
+
+        // 5. DTO 변환
         return MyMemoDetailResponse.builder()
                 .memoId(memo.getId())
                 .storeId(memo.getStore().getId())
                 .storeName(memo.getStore().getName())
                 .concernContent(concernContent)
-                .memoTitle(memo.getTitle())       // 제목 매핑
-                .memoContent(memo.getContent())   // 내용 매핑
-                .ownerReply(ownerReply)           // 답글 매핑
+                .memoTitle(memo.getTitle())
+                .memoContent(memo.getContent())
+                .images(imageUrls)                // [추가] 여기에 담기
+                .ownerReply(ownerReply)
                 .status(memo.getStatus().name())
-                .createdAt(memo.getCreatedAt().toString()) // 포맷팅 필요시 수정 (예: yyyy-MM-dd HH:mm)
+                .createdAt(memo.getCreatedAt().toString())
                 .build();
     }
 }
