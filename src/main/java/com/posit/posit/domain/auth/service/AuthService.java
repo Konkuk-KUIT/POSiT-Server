@@ -7,8 +7,8 @@ import com.posit.posit.domain.auth.entity.PhoneVerification;
 import com.posit.posit.domain.auth.entity.PhoneVerificationStatus;
 import com.posit.posit.domain.auth.repository.PhoneVerificationRepository;
 import com.posit.posit.domain.auth.repository.RefreshTokenRepository;
+import com.posit.posit.domain.coupon.entity.CouponTemplate;
 import com.posit.posit.domain.coupon.repository.CouponTemplateRepository;
-import com.posit.posit.domain.store.entity.Store;
 import com.posit.posit.domain.store.repository.StoreRepository;
 import com.posit.posit.domain.user.entity.OwnerProfile;
 import com.posit.posit.domain.user.entity.User;
@@ -93,6 +93,8 @@ public class AuthService {
             // 가게가 없어도 에러 안 나게 처리 (있으면 연결)
             storeRepository.findByBusinessNumber(businessNumber)
                     .ifPresent(store -> store.assignOwner(user, req.ownerProfile().couponPin()));
+            // Owner 일 경우, 쿠폰 템플릿 3종 저장  (아메리카노, 디저트, 아이스티)
+            createStandardTemplate(user);
         }
 
         // 5) 토큰 발급 + refreshToken 저장
@@ -104,6 +106,48 @@ public class AuthService {
         tokenRepository.save(AuthRefreshToken.issue(user, hashed, exp));
 
         return SignupResponse.of(user, accessToken, refreshToken);
+    }
+
+    private void createStandardTemplate(User owner) {
+        final String AMERICANO = "https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/AlexanderMenu1.jpeg";
+        final String DESSERT   = "https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/LazyHourMenu3.jpeg";
+        final String ICETEA    = "https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/ASMenu3.jpeg";
+
+        if (!couponTemplateRepository.existsByCreatedByIdAndImage(owner.getId(), AMERICANO)) {
+            couponTemplateRepository.save(
+                    CouponTemplate.builder()
+                            .title("아메리카노 1잔 무료 교환권")
+                            .description("아메리카노 1잔 무료 제공")
+                            .image(AMERICANO)
+                            .validDays(30)
+                            .createdBy(owner)
+                            .build()
+            );
+        }
+
+        if (!couponTemplateRepository.existsByCreatedByIdAndImage(owner.getId(), DESSERT)) {
+            couponTemplateRepository.save(
+                    CouponTemplate.builder()
+                            .title("디저트 20% 할인 쿠폰")
+                            .description("디저트 메뉴 20% 할인")
+                            .image(DESSERT)
+                            .validDays(30)
+                            .createdBy(owner)
+                            .build()
+            );
+        }
+
+        if (!couponTemplateRepository.existsByCreatedByIdAndImage(owner.getId(), ICETEA)) {
+            couponTemplateRepository.save(
+                    CouponTemplate.builder()
+                            .title("아이스티 1잔 무료 교환권")
+                            .description("아이스티 1잔 무료 제공")
+                            .image(ICETEA)
+                            .validDays(30)
+                            .createdBy(owner)
+                            .build()
+            );
+        }
     }
 
     @Transactional
