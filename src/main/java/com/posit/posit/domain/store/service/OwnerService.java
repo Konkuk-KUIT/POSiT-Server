@@ -582,21 +582,28 @@ public class OwnerService {
 
     // 12. 메모 상세 조회
     @Transactional
-    public MemoDetailResponse getMemoDetail(Long userId, Long memoId) { // type 제거!
+    public MemoDetailResponse getMemoDetail(Long ownerId, Long memoId) {
 
         // 1. 메모 조회
         Memo memo = memoRepository.findById(memoId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 메모입니다."));
 
-        // 2. 권한 검증
-        if (!memo.getStore().getOwner().getId().equals(userId)) {
+        // 2. 권한 검증 (내 가게의 메모인가?)
+        if (!memo.getStore().getOwner().getId().equals(ownerId)) {
             throw new IllegalArgumentException("해당 메모를 조회할 권한이 없습니다.");
         }
 
+        // 3. 읽음 처리
         memo.markOwnerRead();
 
-        // 4. DTO 변환
-        return MemoDetailResponse.from(memo);
+        // 4. 사장님 답글(Decision) 조회
+        // (메모에 달린 답글이 있는지 확인해서 메시지만 가져옴)
+        String replyMessage = decisionRepository.findByMemoId(memoId)
+                .map(Decision::getMessage)
+                .orElse(null);
+
+        // 5. DTO 반환 (여기서 from 메서드가 호출됨)
+        return MemoDetailResponse.from(memo, replyMessage);
     }
 
     // 13. 쿠폰 관리 (통계 + 목록)

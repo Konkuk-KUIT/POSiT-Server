@@ -3,6 +3,8 @@ package com.posit.posit.domain.memo.dto.response;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.List;
+
 @Getter
 @Builder
 public class MyMemoDetailResponse {
@@ -23,4 +25,7 @@ public class MyMemoDetailResponse {
 
     private String status;        // REVIEWING, ADOPTED, REJECTED
     private String createdAt;
+
+    // [추가] 이미지 URL 리스트
+    private List<String> images;
 }
