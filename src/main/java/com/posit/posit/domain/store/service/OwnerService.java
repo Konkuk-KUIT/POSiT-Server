@@ -581,7 +581,7 @@ public class OwnerService {
     }
 
     // 12. 메모 상세 조회
-    @Transactional
+    @Transactional(readOnly = true)
     public MemoDetailResponse getMemoDetail(Long ownerId, Long memoId) {
 
         // 1. 메모 조회
