@@ -7,6 +7,7 @@ import com.posit.posit.domain.auth.entity.PhoneVerification;
 import com.posit.posit.domain.auth.entity.PhoneVerificationStatus;
 import com.posit.posit.domain.auth.repository.PhoneVerificationRepository;
 import com.posit.posit.domain.auth.repository.RefreshTokenRepository;
+import com.posit.posit.domain.coupon.repository.CouponTemplateRepository;
 import com.posit.posit.domain.store.entity.Store;
 import com.posit.posit.domain.store.repository.StoreRepository;
 import com.posit.posit.domain.user.entity.OwnerProfile;
@@ -36,7 +37,7 @@ public class AuthService {
     private final OwnerProfileRepository ownerProfileRepository;
     private final RefreshTokenRepository tokenRepository;
     private final PhoneVerificationRepository phoneVerificationRepository;
-
+    private final CouponTemplateRepository couponTemplateRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtProvider;
     private final StoreRepository storeRepository;
