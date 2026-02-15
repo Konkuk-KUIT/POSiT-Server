@@ -56,9 +56,10 @@ public class UserService {
         return UserMyPageResponse.from(user);
     }
 
-    ConcernRepository concernRepository;
+    private final ConcernRepository concernRepository;
 
     //게스트 기준 메모들 조회
+    @Transactional(readOnly = true)
     public OwnerConcernListResponse getStoreConcerns(Long storeId, Long cursorId, int size) {
 
         // 1. Repository 호출 (storeId 기준 조회)
