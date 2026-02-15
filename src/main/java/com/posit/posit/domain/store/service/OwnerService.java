@@ -86,7 +86,7 @@ public class OwnerService {
     // 2. 쿠폰 템플릿 목록 조회
     public List<CouponTemplateResponse> getCouponTemplates(Long userId) {
         // 사장님 ID로 조회
-        List<CouponTemplate> templates = couponTemplateRepository.findAllByCreatedById(userId);
+        List<CouponTemplate> templates = couponTemplateRepository.findAllByCreatedBy_Id(userId);
 
         return templates.stream()
                 .map(t -> CouponTemplateResponse.builder()
