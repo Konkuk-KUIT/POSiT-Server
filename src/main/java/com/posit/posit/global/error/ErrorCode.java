@@ -34,10 +34,11 @@ public enum ErrorCode {
     PHONE_VERIFICATION_CODE_MISMATCH(HttpStatus.BAD_REQUEST, 40001, "인증 코드가 틀렸습니다."),
     PHONE_VERIFICATION_EXPIRED(HttpStatus.BAD_REQUEST, 40002, "만료된 인증번호입니다. 다시 요청하십쇼."),
     PHONE_VERIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, 40401, "번호가 맞지 않습니다."),
-    PHONE_VERIFICATION_ATTEMPT_LIMIT(HttpStatus.FORBIDDEN, 40301, "휴대폰 인증 횟수 초과 제한"),
+    PHONE_VERIFICATION_ATTEMPT_LIMIT(HttpStatus.BAD_REQUEST, 40002, "휴대폰 인증 횟수 초과 제한"),
+    PHONE_VERIFICATION_RESEND_LIMIT(HttpStatus.BAD_REQUEST, 40003, "인증번호 재발송 횟수 초과 제한 (최대 3회)"),
 
     // -------------------------------------------------
-    // Conflict / duplicate
+    // Conflict - 409/ duplicate
     // -------------------------------------------------
     DUPLICATE_PHONE(HttpStatus.CONFLICT, 40901, "이미 계정이 존재하는 번호입니다."),
     DUPLICATE_LOGIN_ID(HttpStatus.CONFLICT, 40902, "이미 존재하는 loginId입니다."),

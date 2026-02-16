@@ -55,6 +55,9 @@ dependencies {
 
     // S3
     implementation 'io.awspring.cloud:spring-cloud-starter-aws:2.4.4'
+
+	// SMS 발송, SOLAPI
+	implementation 'com.solapi:sdk:1.0.3'
 }
 
 tasks.named('test') {
