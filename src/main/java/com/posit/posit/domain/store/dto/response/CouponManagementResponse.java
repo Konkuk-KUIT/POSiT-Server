@@ -40,6 +40,7 @@ public class CouponManagementResponse {
         private LocalDate issuedDate;
         private String userName;
         private String couponTitle;
+        private Long memoId;
         private String couponThumbnailUrl;
         private int quantity;
         private String status;
@@ -53,6 +54,7 @@ public class CouponManagementResponse {
                     .couponThumbnailUrl(coupon.getTemplate().getImage())
                     .quantity(1)
                     .status(coupon.getStatus().name())
+                    .memoId(coupon.getMemo() != null ? coupon.getMemo().getId() : null)
                     .build();
         }
     }

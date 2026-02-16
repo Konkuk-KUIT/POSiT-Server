@@ -19,6 +19,7 @@ import com.posit.posit.domain.user.repository.UserRepository;
 import com.posit.posit.global.error.CustomException;
 import com.posit.posit.global.error.ErrorCode;
 import com.posit.posit.global.jwt.JwtUtil;
+import com.posit.posit.global.sms.SmsService;
 import io.jsonwebtoken.Claims;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -41,11 +42,10 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtProvider;
     private final StoreRepository storeRepository;
+    private final SmsService smsService;
 
     @Transactional
     public SignupResponse signup(SignupRequest req) {
-        // [수정 1] 휴대폰 인증 여부 확인 로직을 전부 주석 처리함 (무조건 통과)
-        /*
         PhoneVerification pv = phoneVerificationRepository
                 .findTopByPhoneOrderByCreatedAtDesc(req.phone())
                 .orElseThrow(() -> new CustomException(ErrorCode.PHONE_VERIFICATION_NOT_FOUND));
@@ -61,7 +61,23 @@ public class AuthService {
         if (!pv.isVerified()) {
             throw new CustomException(ErrorCode.PHONE_NOT_VERIFIED);
         }
-        */
+
+        // signupToken 검증
+        String signupToken = req.signupToken();
+        if (signupToken == null || signupToken.isBlank()) {
+            throw new CustomException(ErrorCode.BAD_REQUEST);
+        }
+        // confirm 단계에서 발급된 signupToken 검증 (DB에는 hash로 저장)
+        String savedHash = pv.getSignupTokenHash();
+        if (savedHash == null || !passwordEncoder.matches(signupToken, savedHash)) {
+            // 프로젝트에 INVALID_SIGNUP_TOKEN 같은 에러코드가 있다면 교체 권장
+            throw new CustomException(ErrorCode.BAD_REQUEST);
+        }
+        // 재사용 방지: 회원가입 성공 시 signupToken 즉시 소진
+        pv.consumeSignupToken();
+        phoneVerificationRepository.save(pv);
+
+
 
         // 2) 중복 체크
         if (userRepository.existsByLoginId(req.loginId())) {
@@ -204,68 +220,72 @@ public class AuthService {
         return TokenResponse.of(newAccess, newRefresh);
     }
 
-    private static final int MAX_RESEND = 999999;
-    private static final int MAX_ATTEMPT = 999999;
+    private static final int MAX_RESEND = 3;
+    private static final int MAX_ATTEMPT = 5;
+    private static final int OTP_TTL_MINUTES = 5;
+    private static final int OTP_LENGTH =6;
 
-    private static final String DEMO_CODE = "123123";
-    private static final String DEMO_HASH = "$2a$10$demodemocodedemodemoabcdef";
+    private String generateOtp() {
+        // 6자리 숫자
+        int n = java.util.concurrent.ThreadLocalRandom.current().nextInt(0, 1_000_000);
+        return String.format("%0" + OTP_LENGTH + "d", n);
+    }
 
     @Transactional
     public PhoneVerificationResponse phoneVerify(PhoneVerificationRequest req) {
         LocalDateTime now = now();
         PhoneVerification pv = phoneVerificationRepository
                 .findTopByPhoneOrderByCreatedAtDesc(req.phone())
-                .orElseGet(() -> phoneVerificationRepository.save(
-                        PhoneVerification.builder()
-                                .phone(req.phone())
-                                .codeHash(DEMO_HASH)
-                                .expiredAt(now.plusMinutes(5))
-                                .attemptCount(0)
-                                .resendCount(0)
-                                .status(PhoneVerificationStatus.PENDING)
-                                .build()
-                ));
+                .orElse(null);
 
-
-        if (pv.getResendCount() != null && pv.getResendCount() >= MAX_RESEND) {
-            throw new CustomException(ErrorCode.BAD_REQUEST);
-        }
-
-        if (pv.isVerified()) {
+        if (pv != null && pv.isVerified() && !pv.isExpired(now)) {
             return PhoneVerificationResponse.from(pv);
         }
 
-        if (pv.getResendCount() == null) {
-            pv = PhoneVerification.builder()
-                    .id(pv.getId())
-                    .phone(pv.getPhone())
-                    .codeHash(pv.getCodeHash())
-                    .expiredAt(pv.getExpiredAt())
-                    .verifiedAt(pv.getVerifiedAt())
-                    .attemptCount(0)
-                    .resendCount(0)
-                    .createdAt(pv.getCreatedAt())
-                    .status(pv.getStatus())
-                    .build();
+        if (pv == null || pv.isExpired(now)) {
+            String otp = generateOtp();
+            String codeHash = passwordEncoder.encode(otp);
+
+            pv = phoneVerificationRepository.save(
+                    PhoneVerification.builder()
+                            .phone(req.phone())
+                            .codeHash(codeHash)
+                            .expiredAt(now.plusMinutes(OTP_TTL_MINUTES))
+                            .attemptCount(0)
+                            .resendCount(0)
+                            .status(PhoneVerificationStatus.PENDING)
+                            .build()
+            );
+            smsService.sendSms(req.phone(), otp);
+            return PhoneVerificationResponse.from(pv);
         }
+
+        Integer resend = (pv.getResendCount() == null) ? 0 : pv.getResendCount();
+        if (resend >= MAX_RESEND) {
+            throw new CustomException(ErrorCode.PHONE_VERIFICATION_RESEND_LIMIT);
+        }
+        String otp = generateOtp();
         pv.increaseResend();
-        pv.updateCodeHash(DEMO_HASH);
-        pv.updateExpiredAt(now.plusMinutes(5));
+        pv.updateCodeHash(passwordEncoder.encode(otp));
+        pv.updateExpiredAt(now.plusMinutes(OTP_TTL_MINUTES));
         pv.markPending();
+        phoneVerificationRepository.save(pv);
+        smsService.sendSms(req.phone(), otp);
 
         return PhoneVerificationResponse.from(pv);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = CustomException.class)
     public PhoneVerificationConfirmResponse confirm(PhoneVerificationConfirmRequest req) {
-        PhoneVerification pv = phoneVerificationRepository
-                .findById(req.verificationId())
+        PhoneVerification pv = phoneVerificationRepository.findById(req.verificationId())
                 .orElseThrow(() -> new CustomException(ErrorCode.PHONE_VERIFICATION_NOT_FOUND));
 
         LocalDateTime now = now();
+        String phone = req.phone();
 
-        // 번호가 달라도 일단 통과시켜줌 (개발 편의)
-        // if (!pv.getPhone().equals(req.phone())) { throw ... }
+        if (phone == null || !pv.getPhone().equals(phone)) {
+            throw new CustomException(ErrorCode.BAD_REQUEST);
+        }
 
         if (pv.isExpired(now)) {
             throw new CustomException(ErrorCode.PHONE_VERIFICATION_EXPIRED);
@@ -273,27 +293,47 @@ public class AuthService {
 
         if (pv.isVerified()) {
             final PhoneVerification finalPv = pv;
-            return userRepository.findByPhone(req.phone())
+            return userRepository.findByPhone(phone)
                     .map(user -> PhoneVerificationConfirmResponse.existing(finalPv, user.getId()))
-                    .orElseGet(() -> PhoneVerificationConfirmResponse.newUser(finalPv, DEMO_CODE));
+                    .orElseGet(() -> {
+                        String raw = java.util.UUID.randomUUID().toString();
+                        finalPv.issueSignupToken(passwordEncoder.encode(raw));
+                        phoneVerificationRepository.save(finalPv);
+                        return PhoneVerificationConfirmResponse.newUser(finalPv, raw);
+                    });
         }
-
+        Integer attempt = pv.getAttemptCount() == null ? 0 : pv.getAttemptCount();
+        if (attempt >= MAX_ATTEMPT) {
+            pv = PhoneVerification.builder()
+                    .id(pv.getId())
+                    .phone(pv.getPhone())
+                    .codeHash(pv.getCodeHash())
+                    .expiredAt(pv.getExpiredAt()).verifiedAt(pv.getVerifiedAt()).attemptCount(pv.getAttemptCount())
+                    .resendCount(pv.getResendCount()).createdAt(pv.getCreatedAt()).status(PhoneVerificationStatus.LOCKED)
+                    .build();
+            phoneVerificationRepository.save(pv);
+            throw new CustomException(ErrorCode.PHONE_VERIFICATION_ATTEMPT_LIMIT);
+        }
         pv.increaseAttempt();
-
-        // [수정 2] 특정 번호(DEMO_PHONE) 체크 로직 삭제 -> 모든 번호 허용
-        /*
-        if (!DEMO_PHONE.equals(req.phone())) {
+        boolean matches = passwordEncoder.matches(req.code(), pv.getCodeHash());
+        if (!matches) {
+            phoneVerificationRepository.save(pv);
             throw new CustomException(ErrorCode.PHONE_VERIFICATION_CODE_MISMATCH);
         }
-        */
 
         pv.markVerified(now);
+        phoneVerificationRepository.save(pv);
 
         final PhoneVerification finalPv = pv;
 
         return userRepository.findByPhone(req.phone())
                 .map(user -> PhoneVerificationConfirmResponse.existing(finalPv, user.getId()))
-                .orElseGet(() -> PhoneVerificationConfirmResponse.newUser(finalPv, DEMO_CODE));
+                .orElseGet(() -> {
+                    String raw = java.util.UUID.randomUUID().toString();
+                    finalPv.issueSignupToken(passwordEncoder.encode(raw));
+                    phoneVerificationRepository.save(finalPv);
+                    return PhoneVerificationConfirmResponse.newUser(finalPv, raw);
+                });
     }
 
     @Transactional
