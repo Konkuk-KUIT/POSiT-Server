@@ -275,7 +275,7 @@ public class AuthService {
         return PhoneVerificationResponse.from(pv);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = CustomException.class)
     public PhoneVerificationConfirmResponse confirm(PhoneVerificationConfirmRequest req) {
         PhoneVerification pv = phoneVerificationRepository.findById(req.verificationId())
                 .orElseThrow(() -> new CustomException(ErrorCode.PHONE_VERIFICATION_NOT_FOUND));

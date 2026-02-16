@@ -37,11 +37,13 @@ public class PhoneVerification {
     @Column(name = "signup_token_hash", length = 200)
     private String signupTokenHash;
 
+    @Builder.Default
     @Column(name = "attempt_count", nullable = false)
-    private Integer attemptCount;
+    private Integer attemptCount = 0;
 
+    @Builder.Default
     @Column(name = "resend_count", nullable = false)
-    private Integer resendCount;
+    private Integer resendCount = 0;
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -78,11 +80,11 @@ public class PhoneVerification {
     }
 
     public void increaseAttempt() {
-        this.attemptCount++;
+        this.attemptCount = (this.attemptCount == null) ? 1 : this.getAttemptCount() + 1;
     }
 
     public void increaseResend() {
-        this.resendCount++;
+        this.resendCount = (this.resendCount == null) ? 1 : this.resendCount + 1;
     }
 
     public void issueSignupToken(String signupTokenHash) {
@@ -91,5 +93,12 @@ public class PhoneVerification {
 
     public void consumeSignupToken() {
         this.signupTokenHash = null;
+    }
+
+    @PrePersist
+    private void prePersist() {
+        if (attemptCount == null) attemptCount = 0;
+        if (resendCount == null) resendCount = 0;
+        if (status == null) status = PhoneVerificationStatus.PENDING;
     }
 }
