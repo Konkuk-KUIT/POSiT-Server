@@ -32,7 +32,7 @@ public record ErrorResponse(
         return errorCode.getCode();
     }
 
-    @Schema(description = "필드 에러 상세 정보")
+    @Schema(name = "FieldErrorDetail", description = "필드 에러 상세 정보")
     public record FieldErrorDetail(
             @Schema(description = "에러 발생 필드명", example = "email")
             String field,
