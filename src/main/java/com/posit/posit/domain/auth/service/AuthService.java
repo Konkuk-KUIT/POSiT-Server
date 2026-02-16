@@ -46,7 +46,6 @@ public class AuthService {
 
     @Transactional
     public SignupResponse signup(SignupRequest req) {
-        // [수정 1] 휴대폰 인증 여부 확인 로직을 전부 주석 처리함 (무조건 통과)
         PhoneVerification pv = phoneVerificationRepository
                 .findTopByPhoneOrderByCreatedAtDesc(req.phone())
                 .orElseThrow(() -> new CustomException(ErrorCode.PHONE_VERIFICATION_NOT_FOUND));
@@ -62,6 +61,23 @@ public class AuthService {
         if (!pv.isVerified()) {
             throw new CustomException(ErrorCode.PHONE_NOT_VERIFIED);
         }
+
+        // signupToken 검증
+        String signupToken = req.signupToken();
+        if (signupToken == null || signupToken.isBlank()) {
+            throw new CustomException(ErrorCode.BAD_REQUEST);
+        }
+        // confirm 단계에서 발급된 signupToken 검증 (DB에는 hash로 저장)
+        String savedHash = pv.getSignupTokenHash();
+        if (savedHash == null || !passwordEncoder.matches(signupToken, savedHash)) {
+            // 프로젝트에 INVALID_SIGNUP_TOKEN 같은 에러코드가 있다면 교체 권장
+            throw new CustomException(ErrorCode.BAD_REQUEST);
+        }
+        // 재사용 방지: 회원가입 성공 시 signupToken 즉시 소진
+        pv.consumeSignupToken();
+        phoneVerificationRepository.save(pv);
+
+
 
         // 2) 중복 체크
         if (userRepository.existsByLoginId(req.loginId())) {
@@ -279,7 +295,12 @@ public class AuthService {
             final PhoneVerification finalPv = pv;
             return userRepository.findByPhone(phone)
                     .map(user -> PhoneVerificationConfirmResponse.existing(finalPv, user.getId()))
-                    .orElseGet(() -> PhoneVerificationConfirmResponse.newUser(finalPv, ""));
+                    .orElseGet(() -> {
+                        String raw = java.util.UUID.randomUUID().toString();
+                        finalPv.issueSignupToken(passwordEncoder.encode(raw));
+                        phoneVerificationRepository.save(finalPv);
+                        return PhoneVerificationConfirmResponse.newUser(finalPv, raw);
+                    });
         }
         Integer attempt = pv.getAttemptCount() == null ? 0 : pv.getAttemptCount();
         if (attempt >= MAX_ATTEMPT) {
@@ -307,7 +328,12 @@ public class AuthService {
 
         return userRepository.findByPhone(req.phone())
                 .map(user -> PhoneVerificationConfirmResponse.existing(finalPv, user.getId()))
-                .orElseGet(() -> PhoneVerificationConfirmResponse.newUser(finalPv, ""));
+                .orElseGet(() -> {
+                    String raw = java.util.UUID.randomUUID().toString();
+                    finalPv.issueSignupToken(passwordEncoder.encode(raw));
+                    phoneVerificationRepository.save(finalPv);
+                    return PhoneVerificationConfirmResponse.newUser(finalPv, raw);
+                });
     }
 
     @Transactional

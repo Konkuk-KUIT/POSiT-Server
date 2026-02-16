@@ -34,6 +34,9 @@ public class PhoneVerification {
     @Column(name = "verified_at")
     private LocalDateTime verifiedAt;
 
+    @Column(name = "signup_token_hash", length = 200)
+    private String signupTokenHash;
+
     @Column(name = "attempt_count", nullable = false)
     private Integer attemptCount;
 
@@ -80,5 +83,13 @@ public class PhoneVerification {
 
     public void increaseResend() {
         this.resendCount++;
+    }
+
+    public void issueSignupToken(String signupTokenHash) {
+        this.signupTokenHash = signupTokenHash;
+    }
+
+    public void consumeSignupToken() {
+        this.signupTokenHash = null;
     }
 }
