@@ -41,8 +41,12 @@ public class Concern {
     @JoinColumn(name = "store_id", nullable = false, foreignKey = @ForeignKey(name = "fk_concern_store"))
     private Store store;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "template_id", nullable = false, foreignKey = @ForeignKey(name = "fk_concern_template"))
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "template_id",
+            nullable = true,
+            foreignKey = @ForeignKey(name = "fk_concern_template")
+    )
     private CouponTemplate template;
 
 
