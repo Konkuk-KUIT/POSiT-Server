@@ -713,4 +713,131 @@ public class OwnerService {
                 .nextCursorId(nextCursor)
                 .build();
     }
+
+    //가게 수정
+    @Transactional
+    public Long updateStore(Long userId, StoreRegisterRequest request) { // DTO 재활용
+
+        // 1. 내 가게 조회
+        Store store = storeRepository.findByOwnerId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사장님 명의의 가게를 찾을 수 없습니다."));
+
+        // 2. 주소 & 좌표 처리 (등록 로직과 동일하지만, 변경 확인)
+        String fullRoadAddr = request.getAddress().getRoadAddress() + " " + defaultString(request.getAddress().getDetailAddress());
+
+        // 기존 주소와 다르면 지오코딩 다시 호출
+        BigDecimal lat = store.getLatitude();
+        BigDecimal lon = store.getLongitude();
+        String fullLotAddr = store.getLotAddress();
+
+        if (!fullRoadAddr.equals(store.getRoadAddress())) {
+            GeocodingService.GeoResult geo = geocodingService.getGeoData(request.getAddress().getRoadAddress());
+            lat = BigDecimal.valueOf(geo.getLat());
+            lon = BigDecimal.valueOf(geo.getLon());
+            fullLotAddr = geo.getLotAddress() + " " + defaultString(request.getAddress().getDetailAddress());
+        }
+
+        // 3. 영업시간 & 휴무일 가공
+        String fullOpenTime = request.getOperation().getOpenTime() + "-" + request.getOperation().getCloseTime();
+
+        String notOpenDayStr = null;
+        if (request.getOperation().getRegularHolidays() != null && !request.getOperation().getRegularHolidays().isEmpty()) {
+            notOpenDayStr = request.getOperation().getRegularHolidays().stream()
+                    .map(Enum::name)
+                    .collect(Collectors.joining(","));
+        }
+
+        // 4. 비밀번호 암호화 (재설정)
+        String encodedPin = passwordEncoder.encode(request.getCouponPin());
+
+        // 5. [핵심] 기본 정보 전체 업데이트
+        store.updateAll(
+                request.getName(),
+                request.getPhone(),
+                request.getDescription(),
+                fullOpenTime,
+                notOpenDayStr,
+                request.getSnsUrl(),
+                fullRoadAddr,
+                fullLotAddr,
+                lat,
+                lon,
+                encodedPin,
+                null // 필터는 아래에서 별도 처리
+        );
+
+        // =========================================================
+        // 여기서부터는 "갈아끼우기(Delete & Insert)" 전략
+        // OrphanRemoval = true 설정이 Entity에 되어있다고 가정합니다.
+        // =========================================================
+
+        // 6. 필터 (TYPE) 수정
+        if (request.getType() != null) {
+            // 기존 필터 연결 삭제
+            storeFilterRepository.deleteByStoreId(store.getId());
+            storeFilterRepository.flush(); // 즉시 반영
+
+            // 새 필터 저장
+            Filter typeFilter = filterRepository.findByCategoryAndCode("TYPE", request.getType())
+                    .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 필터"));
+
+            StoreFilter storeFilter = StoreFilter.builder()
+                    .store(store)
+                    .filter(typeFilter)
+                    .build();
+            storeFilterRepository.save(storeFilter);
+        }
+
+        // 7. 이미지 수정 (싹 지우고 다시 등록)
+        store.getImages().clear(); // 기존 이미지 삭제 (orphanRemoval 동작)
+        if (request.getImageUrls() != null) {
+            int order = 1;
+            for (String url : request.getImageUrls()) {
+                StoreImage image = StoreImage.builder()
+                        .store(store)
+                        .imageUrl(url)
+                        .thumbnailUrl(url)
+                        .sortOrder(order++)
+                        .build();
+                store.addImage(image); // 리스트에 추가
+            }
+        }
+
+        // 8. 메뉴 수정 (싹 지우고 다시 등록)
+        store.getMenus().clear(); // 기존 메뉴 삭제
+        if (request.getMenus() != null) {
+            for (StoreRegisterRequest.MenuDto menuDto : request.getMenus()) {
+                Menu menu = Menu.builder()
+                        .store(store)
+                        .name(menuDto.getName())
+                        .price(menuDto.getPrice())
+                        .image(menuDto.getImageUrl())
+                        .type(MenuType.MAIN)
+                        .build();
+                store.addMenu(menu);
+            }
+        }
+
+        // 9. 편의시설 수정 (Repo로 직접 삭제 후 등록)
+        storeConvinceRepository.deleteByStoreId(store.getId());
+        if (request.getConvinces() != null) {
+            for (String code : request.getConvinces()) {
+                Convince convince = convinceRepository.findByCode(code)
+                        .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 코드: " + code));
+
+                StoreConvince storeConvince = StoreConvince.builder()
+                        .store(store)
+                        .convince(convince)
+                        .build();
+                storeConvinceRepository.save(storeConvince);
+            }
+        }
+
+        return store.getId();
+    }
+
+    // null 방지용 헬퍼
+    private String defaultString(String str) {
+        return str == null ? "" : str;
+    }
 }
