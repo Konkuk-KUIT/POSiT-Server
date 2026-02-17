@@ -283,27 +283,45 @@ public class OwnerService {
         return new ConcernRejectResponse(concernTitle, writer, rejectedAt);
     }
 
-    @Transactional
+    @Transactional(readOnly = true) // 조회니까 readOnly 권장
     public AdoptionResultResponse getAdoptionResult(Long ownerId, Long memoId) {
-        Store store = storeRepository.findByOwnerId(ownerId)
-                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
+
+        // 1. 메모 먼저 조회
         Memo memo = memoRepository.findById(memoId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 메모입니다"));
-        if (memo.getStore() == null || memo.getStore().getId() == null || !memo.getStore().getId().equals(store.getId())) {
-            throw new IllegalArgumentException("해당 매장의 메모가 아닙니다");
+
+        // 2. [수정됨] 메모가 속한 가게의 주인이 '현재 로그인한 사장님'인지 확인
+        // (기존: 사장님의 가게를 먼저 찾아서 비교 -> 문제 발생 가능)
+        if (!memo.getStore().getOwner().getId().equals(ownerId)) {
+            throw new IllegalArgumentException("해당 매장의 메모가 아닙니다 (권한 없음)");
         }
+
+        // 3. 상태 검증 (기존 동일)
         if (memo.getStatus() != MemoStatus.ADOPTED) {
             throw new IllegalArgumentException("채택된 메모가 아닙니다");
         }
+
+        // 4. 답글 조회 (기존 동일)
         Decision decision = decisionRepository.findByMemoId(memoId)
                 .orElseThrow(() -> new IllegalArgumentException("채택 정보가 없습니다"));
+
         if (decision.getType() != DecisionType.ADOPT) {
             throw new IllegalStateException("채택(ADOPT) 결정이 아닙니다.");
         }
-        String writer = (memo.getUser() != null) ? memo.getUser().getLoginId() : null;
-        String concernTitle = (memo.getConcern() != null) ? memo.getConcern().getContent() : null;
-        String adoptedAt = (decision.getCreatedAt() != null) ? decision.getCreatedAt().toString() : null;
-        String reward = (decision.getCouponTemplate().getTitle() != null) ? decision.getCouponTemplate().getTitle() : null;
+
+        // 5. 응답 생성
+        String writer = (memo.getUser() != null) ? memo.getUser().getLoginId() : "(알수없음)";
+        String concernTitle = (memo.getConcern() != null) ? memo.getConcern().getContent() : "";
+
+        // Null 처리 안전하게 추가
+        String adoptedAt = (decision.getCreatedAt() != null) ? decision.getCreatedAt().toString() : "";
+
+        // 쿠폰 템플릿 Null 체크 추가 (NullPointer 방지)
+        String reward = null;
+        if (decision.getCouponTemplate() != null) {
+            reward = decision.getCouponTemplate().getTitle();
+        }
+
         return AdoptionResultResponse.of(concernTitle, writer, adoptedAt, reward);
     }
 
