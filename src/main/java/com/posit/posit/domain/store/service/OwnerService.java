@@ -105,16 +105,19 @@ public class OwnerService {
         Store store = storeRepository.findByOwnerId(ownerId)
                 .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
 
-        // 2. 쿠폰 템플릿 조회
-        CouponTemplate template = couponTemplateRepository.findById(request.getTemplateId())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 쿠폰 템플릿입니다."));
+        // 2.쿠폰 템플릿 처리 (ID가 있을 때만 조회)
+        CouponTemplate template = null;
+        if (request.getTemplateId() != null) {
+            template = couponTemplateRepository.findById(request.getTemplateId())
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 쿠폰 템플릿입니다."));
 
-        // [검증] 이 쿠폰 템플릿을 이 사장님이 만든 게 맞는가?
-        if (!template.getCreatedBy().getId().equals(ownerId)) {
-            throw new IllegalArgumentException("본인이 생성한 쿠폰 템플릿만 사용할 수 있습니다.");
+            // 본인 확인 검증
+            if (!template.getCreatedBy().getId().equals(ownerId)) {
+                throw new IllegalArgumentException("본인이 생성한 쿠폰 템플릿만 사용할 수 있습니다.");
+            }
         }
 
-        // 3. 엔티티 생성
+        // 3. 엔티티 생성 (template 자리에 null이 들어가도 정상 작동함)
         Concern concern = Concern.builder()
                 .store(store)
                 .template(template)
@@ -124,7 +127,10 @@ public class OwnerService {
 
         // 4. 저장
         concernRepository.save(concern);
-        return new ConcernCreateResponse(concern.getId(), store.getId(), template.getId());
+
+        // 5.  응답 반환 시 NullPointerException 방지
+        Long responseTemplateId = (template != null) ? template.getId() : null;
+        return new ConcernCreateResponse(concern.getId(), store.getId(), responseTemplateId);
     }
 
     // 3. 수신함 조회 (무한 스크롤 적용)
