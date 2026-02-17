@@ -4,6 +4,7 @@ import com.posit.posit.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -133,6 +134,23 @@ public class Store {
         this.couponPinHash = encodedPin;
     }
 
+    // 전체 정보 덮어쓰기 (PUT 방식)
+    public void updateAll(String name, String phone, String description,
+                          String openTime, String notOpen, String snsLink,
+                          String roadAddress, String lotAddress,
+                          BigDecimal lat, BigDecimal lon, String couponPinHash,
+                          Filter typeFilter) { // 필터도 여기서 처리할 수 있으면 좋음 (아래 설명 참조)
 
-
+        this.name = name;
+        this.phone = phone;
+        this.description = description;
+        this.openTime = openTime;
+        this.notOpen = notOpen;
+        this.snsLink = snsLink;
+        this.roadAddress = roadAddress;
+        this.lotAddress = lotAddress;
+        this.latitude = lat;
+        this.longitude = lon;
+        this.couponPinHash = couponPinHash;
+    }
 }

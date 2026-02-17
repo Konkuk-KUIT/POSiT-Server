@@ -16,4 +16,6 @@ public interface StoreFilterRepository extends JpaRepository<StoreFilter, Long> 
         order by f.id asc
     """)
     Optional<String> findFirstTypeCodeByStoreId(Long storeId);
+
+    void deleteByStoreId(Long storeId);
 }
