@@ -840,4 +840,13 @@ public class OwnerService {
     private String defaultString(String str) {
         return str == null ? "" : str;
     }
+
+    public Long getMyStoreId(Long ownerId) {
+        ownerProfileRepository.findByUserId(ownerId)
+                .orElseThrow(()->new CustomException(ErrorCode.BAD_REQUEST));
+
+        Store store = storeRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
+        return store.getId();
+    }
 }

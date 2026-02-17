@@ -96,7 +96,7 @@ public class OwnerController {
             @PathVariable Long memoId,
             @RequestBody @Valid MemoRejectRequest request
     ) {
-        return ResponseEntity.ok(ApiResponse.success( ownerService.rejectMemo(user.getId(), memoId, request)));
+        return ResponseEntity.ok(ApiResponse.success(ownerService.rejectMemo(user.getId(), memoId, request)));
     }
 
     // 6. 사장님 홈 화면 (대시보드)
@@ -248,5 +248,13 @@ public class OwnerController {
         Long storeId = ownerService.updateStore(user.getId(), request);
 
         return ResponseEntity.ok(ApiResponse.success(storeId));
+    }
+
+    @Operation(summary = "내 가게 ID 반환", description = "로그인한 사장님의 가게 ID를 반환합니다.")
+    @GetMapping("/owner/store-id")
+    public ResponseEntity<ApiResponse<Long>> myStoreId(
+            @AuthenticationPrincipal UserPrincipal user
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(ownerService.getMyStoreId(user.getId())));
     }
 }
