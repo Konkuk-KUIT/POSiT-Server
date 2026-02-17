@@ -391,9 +391,11 @@ public class OwnerService {
         String fullOpenTime = request.getOperation().getOpenTime() + "-" + request.getOperation().getCloseTime();
 
         // 휴무일
-        Weekday notOpenDay = null;
+        String notOpenDayStr = null;
         if (request.getOperation().getRegularHolidays() != null && !request.getOperation().getRegularHolidays().isEmpty()) {
-            notOpenDay = request.getOperation().getRegularHolidays().get(0);
+            notOpenDayStr = request.getOperation().getRegularHolidays().stream()
+                    .map(Enum::name) // Weekday.MONDAY -> "MONDAY" (문자열 변환)
+                    .collect(Collectors.joining(",")); // "MONDAY,TUESDAY" (합치기)
         }
 
         // 비밀번호 암호화
@@ -416,7 +418,7 @@ public class OwnerService {
                 .longitude(BigDecimal.valueOf(geoResult.getLon()))
 
                 .openTime(fullOpenTime)
-                .notOpen(notOpenDay)
+                .notOpen(notOpenDayStr)
                 .snsLink(request.getSnsUrl())
                 .couponPinHash(encodedPin)
                 .build();

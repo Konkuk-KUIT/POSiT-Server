@@ -48,9 +48,9 @@ public class Store {
     @Column(name = "open_time", length = 20, nullable = false)
     private String openTime; // "HH:mm-HH:mm"
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "not_open")
-    private Weekday notOpen;
+    // "MONDAY,TUESDAY" 처럼 문자열로 저장됩니다.
+    @Column(name = "not_open", length = 100)
+    private String notOpen;
 
     @Column(name = "latitude", precision = 10, scale = 7, nullable = false)
     private java.math.BigDecimal latitude;

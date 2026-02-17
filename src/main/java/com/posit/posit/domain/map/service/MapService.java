@@ -20,9 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -200,12 +198,22 @@ public class MapService {
     public MapStoreDetailResponse getDetail(Long storeId) {
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
+
+        // 👇 [수정 1] 휴무일 데이터 변환 (String "FRI,SAT" -> List ["FRI", "SAT"])
+        List<String> notOpenList = new ArrayList<>();
+        if (store.getNotOpen() != null && !store.getNotOpen().isBlank()) {
+            notOpenList = Arrays.asList(store.getNotOpen().split(","));
+        }
+
+        // 영업 상태 계산 (Calculator가 String을 받도록 되어 있다면 그대로 둠)
         String statusCode = StoreOpenCalculator.calculateStatusCode(store.getOpenTime(), store.getNotOpen());
+
         // 편의시설
         List<MapStoreDetailResponse.ConvinceItem> convince = storeConvinceRepository.findDisplayNamesByStoreId(storeId)
                 .stream()
                 .map(MapStoreDetailResponse.ConvinceItem::new)
                 .toList();
+
         // image
         List<MapStoreDetailResponse.ImageItem> images = storeImageRepository.findAllByStoreIdOrderBySortOrderAsc(storeId)
                 .stream()
@@ -216,12 +224,13 @@ public class MapService {
                         img.getSortOrder()
                 ))
                 .toList();
+
         // menu
         List<MapStoreDetailResponse.MenuItem> menu = menuRepository.findAllByStoreIdOrderBySortOrderAsc(storeId)
                 .stream()
                 .map(m -> new MapStoreDetailResponse.MenuItem(
-                        m.getImage(),         // 컬럼명이 image
-                        m.getType(),          // VARCHAR(15)
+                        m.getImage(),
+                        m.getType(),
                         m.getName(),
                         m.getPrice(),
                         m.getSortOrder()
@@ -250,7 +259,7 @@ public class MapService {
         MapStoreDetailResponse.PositPreview positPreview =
                 new MapStoreDetailResponse.PositPreview(concernPreview, memoPreviews);
 
-        // typeCode: store_filter에서 category=TYPE 인 필터의 code 1개를 대표값으로 내려줌 (없으면 null)
+        // typeCode 조회
         String typeCode = storeFilterRepository.findFirstTypeCodeByStoreId(storeId).orElse(null);
 
         return new MapStoreDetailResponse(
@@ -262,7 +271,10 @@ public class MapService {
                 store.getPhone(),
                 statusCode,
                 store.getOpenTime(),
-                store.getNotOpen() == null ? null : store.getNotOpen(),
+
+                // 👇 [수정 2] 여기에 변환한 리스트를 넣어줍니다!
+                notOpenList,
+
                 new MapStoreDetailResponse.Address(store.getRoadAddress(), store.getLotAddress()),
                 new MapStoreDetailResponse.Location(store.getLatitude().doubleValue(), store.getLongitude().doubleValue()),
                 store.getSnsLink(),
