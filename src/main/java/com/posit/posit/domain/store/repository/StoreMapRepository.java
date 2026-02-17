@@ -69,7 +69,7 @@ public interface StoreMapRepository extends JpaRepository<Store, Long> {
         String getRoadAddress();
         String getLotAddress();
         String getOpenTime();
-        Weekday getNotOpen();
+        String getNotOpen();
         Long getDistanceKey();
         Double getDistanceMeters();
     }

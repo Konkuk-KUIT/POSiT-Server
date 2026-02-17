@@ -2,7 +2,7 @@ package com.posit.posit.domain.map.dto.response;
 
 import com.posit.posit.domain.store.entity.MenuType;
 import com.posit.posit.domain.store.entity.StoreType;
-import com.posit.posit.domain.store.entity.Weekday;
+// import com.posit.posit.domain.store.entity.Weekday; // 👈 이제 Weekday Enum 직접 안 씀
 
 import java.util.List;
 
@@ -15,7 +15,11 @@ public record MapStoreDetailResponse(
         String phone,
         String statusCode,
         String openTime,
-        Weekday notOpen,
+
+        // [수정됨] Weekday -> List<String> 으로 변경
+        // 예: ["MONDAY", "TUESDAY"]
+        List<String> notOpen,
+
         Address address,
         Location location,
         String snsLink,
