@@ -60,8 +60,12 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/actuator/health",
                                 "/api/ping",
-                                "/stores" // 가게 등록은 열려있어야 함 (로그인 필요하면 제외)
+                                "/stores", // 가게 등록은 열려있어야 함 (로그인 필요하면 제외)
+
+                                // 👇 [추가] 이미지 경로 허용! (이거 추가하면 해결됨)
+                                "/uploads/**"
                         ).permitAll()
+
                         // 사장님 전용
                         .requestMatchers("/owner/**").hasRole("OWNER")
                         // ... 나머지 설정
