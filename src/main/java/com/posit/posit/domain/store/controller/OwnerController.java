@@ -237,4 +237,16 @@ public class OwnerController {
     ) {
         return ResponseEntity.ok(ApiResponse.success(ownerService.getAdoptionResult(user.getId(), memoId)));
     }
+
+    @Operation(summary = "내 가게 정보 전체 수정", description = "가게 등록과 동일한 포맷으로 데이터를 받아 기존 정보를 덮어씁니다.")
+    @PutMapping("/owner/store") // 전체 수정은 PUT이 정석입니다.
+    public ResponseEntity<ApiResponse<Long>> updateStore(
+            @AuthenticationPrincipal UserPrincipal user, // 토큰에서 사장님 ID 추출
+            @RequestBody @Valid StoreRegisterRequest request // 등록 때 썼던 DTO 재사용
+    ) {
+        // Service의 updateStore 메서드 호출 (아까 만든 '갈아끼우기' 로직)
+        Long storeId = ownerService.updateStore(user.getId(), request);
+
+        return ResponseEntity.ok(ApiResponse.success(storeId));
+    }
 }

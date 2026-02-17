@@ -16,4 +16,6 @@ public interface StoreConvinceRepository extends JpaRepository<StoreConvince, Lo
         order by c.id asc
     """)
     List<String> findDisplayNamesByStoreId(Long storeId);
+
+    void deleteByStoreId(Long storeId);
 }
