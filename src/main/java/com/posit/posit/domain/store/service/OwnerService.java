@@ -716,14 +716,14 @@ public class OwnerService {
 
     //가게 수정
     @Transactional
-    public Long updateStore(Long userId, StoreRegisterRequest request) { // DTO 재활용
+    public Long updateStore(Long userId, StoreUpdateRequest request) { // DTO 재활용
 
         // 1. 내 가게 조회
         Store store = storeRepository.findByOwnerId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사장님 명의의 가게를 찾을 수 없습니다."));
 
         // 2. 주소 & 좌표 처리 (등록 로직과 동일하지만, 변경 확인)
-        String fullRoadAddr = request.getAddress().getRoadAddress() + " " + defaultString(request.getAddress().getDetailAddress());
+        String fullRoadAddr = request.address().getRoadAddress() + " " + defaultString(request.address().getDetailAddress());
 
         // 기존 주소와 다르면 지오코딩 다시 호출
         BigDecimal lat = store.getLatitude();
@@ -731,38 +731,38 @@ public class OwnerService {
         String fullLotAddr = store.getLotAddress();
 
         if (!fullRoadAddr.equals(store.getRoadAddress())) {
-            GeocodingService.GeoResult geo = geocodingService.getGeoData(request.getAddress().getRoadAddress());
+            GeocodingService.GeoResult geo = geocodingService.getGeoData(request.address().getRoadAddress());
             lat = BigDecimal.valueOf(geo.getLat());
             lon = BigDecimal.valueOf(geo.getLon());
-            fullLotAddr = geo.getLotAddress() + " " + defaultString(request.getAddress().getDetailAddress());
+            fullLotAddr = geo.getLotAddress() + " " + defaultString(request.address().getDetailAddress());
         }
 
         // 3. 영업시간 & 휴무일 가공
-        String fullOpenTime = request.getOperation().getOpenTime() + "-" + request.getOperation().getCloseTime();
+        String fullOpenTime = request.operation().getOpenTime() + "-" + request.operation().getCloseTime();
 
         String notOpenDayStr = null;
-        if (request.getOperation().getRegularHolidays() != null && !request.getOperation().getRegularHolidays().isEmpty()) {
-            notOpenDayStr = request.getOperation().getRegularHolidays().stream()
+        if (request.operation().getRegularHolidays() != null && !request.operation().getRegularHolidays().isEmpty()) {
+            notOpenDayStr = request.operation().getRegularHolidays().stream()
                     .map(Enum::name)
                     .collect(Collectors.joining(","));
         }
 
         // 4. 비밀번호 암호화 (재설정)
-        String encodedPin = passwordEncoder.encode(request.getCouponPin());
+        // 4. 비밀번호 암호화 (재설정) - couponPin은 DTO에서 제거됨
 
         // 5. [핵심] 기본 정보 전체 업데이트
         store.updateAll(
-                request.getName(),
-                request.getPhone(),
-                request.getDescription(),
+                request.name(),
+                request.phone(),
+                request.description(),
                 fullOpenTime,
                 notOpenDayStr,
-                request.getSnsUrl(),
+                request.snsUrl(),
                 fullRoadAddr,
                 fullLotAddr,
                 lat,
                 lon,
-                encodedPin,
+                store.getCouponPinHash(),
                 null // 필터는 아래에서 별도 처리
         );
 
@@ -772,13 +772,13 @@ public class OwnerService {
         // =========================================================
 
         // 6. 필터 (TYPE) 수정
-        if (request.getType() != null) {
+        if (request.type() != null) {
             // 기존 필터 연결 삭제
             storeFilterRepository.deleteByStoreId(store.getId());
             storeFilterRepository.flush(); // 즉시 반영
 
             // 새 필터 저장
-            Filter typeFilter = filterRepository.findByCategoryAndCode("TYPE", request.getType())
+            Filter typeFilter = filterRepository.findByCategoryAndCode("TYPE", request.type())
                     .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 필터"));
 
             StoreFilter storeFilter = StoreFilter.builder()
@@ -790,9 +790,9 @@ public class OwnerService {
 
         // 7. 이미지 수정 (싹 지우고 다시 등록)
         store.getImages().clear(); // 기존 이미지 삭제 (orphanRemoval 동작)
-        if (request.getImageUrls() != null) {
+        if (request.imageUrls() != null) {
             int order = 1;
-            for (String url : request.getImageUrls()) {
+            for (String url : request.imageUrls()) {
                 StoreImage image = StoreImage.builder()
                         .store(store)
                         .imageUrl(url)
@@ -805,8 +805,8 @@ public class OwnerService {
 
         // 8. 메뉴 수정 (싹 지우고 다시 등록)
         store.getMenus().clear(); // 기존 메뉴 삭제
-        if (request.getMenus() != null) {
-            for (StoreRegisterRequest.MenuDto menuDto : request.getMenus()) {
+        if (request.menus() != null) {
+            for (StoreUpdateRequest.MenuDto menuDto : request.menus()) {
                 Menu menu = Menu.builder()
                         .store(store)
                         .name(menuDto.getName())
@@ -820,8 +820,8 @@ public class OwnerService {
 
         // 9. 편의시설 수정 (Repo로 직접 삭제 후 등록)
         storeConvinceRepository.deleteByStoreId(store.getId());
-        if (request.getConvinces() != null) {
-            for (String code : request.getConvinces()) {
+        if (request.convinces() != null) {
+            for (String code : request.convinces()) {
                 Convince convince = convinceRepository.findByCode(code)
                         .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 코드: " + code));
 
