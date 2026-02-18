@@ -283,7 +283,7 @@ public class OwnerService {
         return new ConcernRejectResponse(concernTitle, writer, rejectedAt);
     }
 
-    @Transactional(readOnly = true) // 조회니까 readOnly 권장
+    @Transactional(readOnly = true)
     public AdoptionResultResponse getAdoptionResult(Long ownerId, Long memoId) {
 
         // 1. 메모 먼저 조회

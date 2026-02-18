@@ -5,5 +5,5 @@ public enum FreeType {
     MARKETING,
     MENU_DEV,
     TREND,
-    CUSTOM_SERVICE
+    CUSTOMER_SERVICE
 }
