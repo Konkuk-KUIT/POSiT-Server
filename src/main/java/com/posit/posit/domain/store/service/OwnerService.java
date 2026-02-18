@@ -613,7 +613,7 @@ public class OwnerService {
     }
 
     // 12. 메모 상세 조회
-    @Transactional(readOnly = true)
+    @Transactional
     public MemoDetailResponse getMemoDetail(Long ownerId, Long memoId) {
 
         // 1. 메모 조회
@@ -627,6 +627,7 @@ public class OwnerService {
 
         // 3. 읽음 처리
         memo.markOwnerRead();
+        memoRepository.flush();
 
         // 4. 사장님 답글(Decision) 조회
         // (메모에 달린 답글이 있는지 확인해서 메시지만 가져옴)
