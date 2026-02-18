@@ -109,11 +109,11 @@ public class OwnerService {
         CouponTemplate template = null;
         if (request.getTemplateId() != null) {
             template = couponTemplateRepository.findById(request.getTemplateId())
-                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 쿠폰 템플릿입니다."));
+                    .orElseThrow(() -> new CustomException(ErrorCode.TEMPLATE_NOT_FOUND));
 
             // 본인 확인 검증
             if (!template.getCreatedBy().getId().equals(ownerId)) {
-                throw new IllegalArgumentException("본인이 생성한 쿠폰 템플릿만 사용할 수 있습니다.");
+                throw new CustomException(ErrorCode.COUPON_TEMPLATE_FORBIDDEN);
             }
         }
 
@@ -130,7 +130,7 @@ public class OwnerService {
 
         // 5.  응답 반환 시 NullPointerException 방지
         Long responseTemplateId = (template != null) ? template.getId() : null;
-        return new ConcernCreateResponse(concern.getId(), store.getId(), responseTemplateId);
+        return ConcernCreateResponse.of(concern.getId(), store.getId(), responseTemplateId);
     }
 
     // 3. 수신함 조회 (무한 스크롤 적용)

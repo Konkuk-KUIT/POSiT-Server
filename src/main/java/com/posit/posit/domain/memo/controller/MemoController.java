@@ -11,6 +11,8 @@ import com.posit.posit.domain.memo.entity.MemoType;
 import com.posit.posit.domain.memo.service.MemoService;
 import com.posit.posit.domain.user.dto.UserPrincipal;
 import com.posit.posit.global.response.ApiResponse;
+import com.posit.posit.global.swagger.ApiErrorCodes;
+import com.posit.posit.global.swagger.SwaggerErrorSet;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,14 +31,14 @@ public class MemoController {
     // 메모 등록 API
     // POST /stores/{storeId}/memos
     @Operation(summary = "메모 등록", description = "특정 가게에 대한 새로운 메모를 작성합니다.") // 2. API 설명 추가
+    @ApiErrorCodes(SwaggerErrorSet.CREATE_MEMO)
     @PostMapping("/stores/{storeId}/memos")
     public ResponseEntity<ApiResponse<MemoCreateResponse>> createMemo(
             @AuthenticationPrincipal UserPrincipal user,
             @PathVariable Long storeId,
             @RequestBody @Valid MemoCreateRequest request
     ) {
-        MemoCreateResponse response = memoService.createMemo(user.getId(), storeId, request);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(memoService.createMemo(user.getId(), storeId, request)));
     }
 
     // 메모 수정 API

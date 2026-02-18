@@ -5,4 +5,7 @@ public record ConcernCreateResponse(
         Long StoreId,
         Long templateId
 ) {
+    public static ConcernCreateResponse of(Long concernId, Long storeId, Long templateId) {
+        return new ConcernCreateResponse(concernId, storeId, templateId);
+    }
 }

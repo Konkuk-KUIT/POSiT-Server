@@ -14,6 +14,8 @@ import com.posit.posit.domain.memo.repository.MemoRepository;
 import com.posit.posit.domain.store.repository.StoreRepository;
 import com.posit.posit.domain.user.entity.User;
 import com.posit.posit.domain.user.repository.UserRepository;
+import com.posit.posit.global.error.CustomException;
+import com.posit.posit.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -39,27 +41,27 @@ public class MemoService {
 
         // 1. 유저 & 가게 조회 (기존 동일)
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         Store store = storeRepository.findById(storeId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 가게입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
 
         // 2. 타입별 검증 및 Concern 설정 (기존 동일)
         Concern concern = null;
 
         if (request.getMemoType() == MemoType.ANSWER) {
             if (request.getConcernId() == null) {
-                throw new IllegalArgumentException("답변(ANSWER) 작성 시 고민 ID(concernId)는 필수입니다.");
+                throw new CustomException(ErrorCode.ANSWER_CONCERN_ESSENTIAL);
             }
             concern = concernRepository.findById(request.getConcernId())
-                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 고민글입니다."));
+                    .orElseThrow(() -> new CustomException(ErrorCode.CONCERN_NOT_FOUND));
 
             if (!concern.getStore().getId().equals(storeId)) {
-                throw new IllegalArgumentException("해당 고민은 이 가게의 고민이 아닙니다.");
+                throw new CustomException(ErrorCode.CONCERN_STORE_MISMATCH);
             }
         } else if (request.getMemoType() == MemoType.FREE) {
             if (request.getFreeType() == null) {
-                throw new IllegalArgumentException("자유 메모(FREE) 작성 시 카테고리(freeType)는 필수입니다.");
+                throw new CustomException(ErrorCode.FREE_TYPE_ESSENTIAL);
             }
         }
 
@@ -72,7 +74,6 @@ public class MemoService {
                 .freeType(request.getFreeType())
                 .title(request.getTitle())
                 .content(request.getContent())
-                // .image(imageString) <--- 삭제됨!
                 .status(MemoStatus.REVIEWING)
                 .ownerRead(false)
                 .build();
