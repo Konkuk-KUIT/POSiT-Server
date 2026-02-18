@@ -77,6 +77,11 @@ public enum SwaggerErrorSet {
             TIME_FORMAT_OUT
     )),
 
+    CONVINCE_UPDATE(setOf(
+            STORE_NOT_FOUND,
+            CONVINCE_CODE_NOT_FOUND
+    )),
+
     DEFAULT(setOf());
 
     private final Set<ErrorCode> codes;

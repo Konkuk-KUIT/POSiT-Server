@@ -262,4 +262,14 @@ public class OwnerController {
     ) {
         return ResponseEntity.ok(ApiResponse.success(ownerService.getMyStoreId(user.getId())));
     }
+
+    @Operation(summary = "가게 편의시설 수정", description = "가게의 편의시설을 수정합니다.")
+    @ApiErrorCodes(SwaggerErrorSet.CONVINCE_UPDATE)
+    @PatchMapping("/owner/store/convinces")
+    public ResponseEntity<ApiResponse<ConvinceUpdate>> updateConvince(
+            @AuthenticationPrincipal UserPrincipal user,
+            @RequestBody ConvinceUpdate request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(ownerService.updateConvince(user.getId(), request)));
+    }
 }
