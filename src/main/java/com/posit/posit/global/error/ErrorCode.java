@@ -26,6 +26,8 @@ public enum ErrorCode {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, 40403, "해당 유저를 찾을 수 없습니다"),
     MEMO_NOT_FOUND(HttpStatus.NOT_FOUND, 40404, "해당 메모를 찾을 수 없습니다"),
     TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND, 40405, "존재하지 않는 쿠폰 템플릿입니다"),
+    FILTER_CODE_NOT_FOUND(HttpStatus.NOT_FOUND, 40406, "지원하지 않는 필터 타입입니다."),
+    CONVINCE_CODE_NOT_FOUND(HttpStatus.NOT_FOUND, 40407, "지원하지 않는 편의시설 코드입니다."),
 
     // -------------------------------------------------
     // 403 FORBIDDEN
@@ -59,7 +61,12 @@ public enum ErrorCode {
     PHONE_VERIFICATION_RESEND_LIMIT(HttpStatus.BAD_REQUEST, 40006, "인증번호 재발송 횟수 초과 제한 (최대 3회)"),
     INVALID_PASSWORD(HttpStatus.BAD_REQUEST, 40007, "유효하지 않는 비밀번호입니다."),
     INVALID_PIN(HttpStatus.BAD_REQUEST, 40008, "PIN 비밀번호가 일치하지 않습니다."),
-    MEMO_ALREADY_DECIDE(HttpStatus.BAD_REQUEST, 40009, "이미 처리가 완료된 메모입니다.");
+    MEMO_ALREADY_DECIDE(HttpStatus.BAD_REQUEST, 40009, "이미 처리가 완료된 메모입니다."),
+    DB_CONSTRAINT_VIOLATION(HttpStatus.BAD_REQUEST, 40010, "DB 제약조건 오류입니다."),
+    ROAD_ADDRESS_LENGTH_OVER(HttpStatus.BAD_REQUEST, 40011, "도로명 주소 최대 길이 초과입니다. (최대255)"),
+    LOT_ADDRESS_LENGTH_OVER(HttpStatus.BAD_REQUEST, 40011, "지번 주소 최대 길이 초과입니다. (최대255)"),
+    TIME_FORMAT_OUT(HttpStatus.BAD_REQUEST, 40012, "시간 요청이 양식과 맞지 않습니다 (HH:mm)")
+    ;
 
 
     private final HttpStatus httpStatus;

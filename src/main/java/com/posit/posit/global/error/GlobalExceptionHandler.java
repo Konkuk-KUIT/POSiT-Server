@@ -1,6 +1,7 @@
 package com.posit.posit.global.error;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -61,6 +62,29 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .badRequest()
                 .body(ErrorResponse.fail(ErrorCode.DTO_VALIDATION_FAILED));
+    }
+
+    // DB 제약조건 예외 (UNIQUE/FK/NOT NULL/길이 초과 등)
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException e) {
+
+        String constraint = null;
+        Throwable cause = e;
+        while (cause != null) {
+            if (cause instanceof org.hibernate.exception.ConstraintViolationException cve) {
+                constraint = cve.getConstraintName();
+                break;
+            }
+            cause = cause.getCause();
+        }
+
+        // ✅ 클라이언트에게는 내부 DB/SQL 상세를 노출하지 않고,
+        // 서버 로그로만 어떤 제약조건에서 터졌는지 남긴다.
+        log.warn("[DB_CONSTRAINT] constraint={} message={}", constraint, e.getMostSpecificCause() != null ? e.getMostSpecificCause().getMessage() : e.getMessage(), e);
+
+        return ResponseEntity
+                .status(ErrorCode.DB_CONSTRAINT_VIOLATION.getHttpStatus())
+                .body(ErrorResponse.fail(ErrorCode.DB_CONSTRAINT_VIOLATION));
     }
 
     // 기타 모든 예외
