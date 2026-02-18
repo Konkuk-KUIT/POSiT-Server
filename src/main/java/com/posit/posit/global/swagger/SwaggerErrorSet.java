@@ -107,7 +107,8 @@ public enum SwaggerErrorSet {
                 BAD_REQUEST,
                 METHOD_NOT_ALLOWED,
                 INTERNAL_ERROR,
-                DB_CONSTRAINT_VIOLATION
+                DB_CONSTRAINT_VIOLATION,
+                DTO_VALIDATION_FAILED
         ));
         this.codes = codes;
     }
