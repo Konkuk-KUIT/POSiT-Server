@@ -184,22 +184,22 @@ public class OwnerService {
                 .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
         // 1. 메모 조회
         Memo memo = memoRepository.findById(memoId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 메모입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMO_NOT_FOUND));
 
         if (memo.getStore() == null || memo.getStore().getId() == null || !memo.getStore().getId().equals(store.getId())) {
-            throw new IllegalArgumentException("해당 매장의 메모가 아닙니다.");
+            throw new CustomException(ErrorCode.MEMO_STORE_FORBIDDEN);
         }
 
         // [검증] 이미 처리된 메모인지 확인
         if (memo.getStatus() != MemoStatus.REVIEWING) {
-            throw new IllegalStateException("이미 처리된 메모입니다.");
+            throw new CustomException(ErrorCode.MEMO_DECISION_DUPLICATE);
         }
 
         // 2. 쿠폰 템플릿 조회
         CouponTemplate template = couponTemplateRepository.findById(request.getCouponTemplateId())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 쿠폰 템플릿입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.TEMPLATE_NOT_FOUND));
         if (!template.getCreatedBy().getId().equals(ownerId)) {
-            throw new IllegalArgumentException("본인이 생성한 쿠폰 템플릿만 사용할 수 있습니다.");
+            throw new CustomException(ErrorCode.COUPON_TEMPLATE_FORBIDDEN);
         }
 
         // 3. 메모 상태 변경
@@ -248,13 +248,13 @@ public class OwnerService {
         Store store = storeRepository.findByOwnerId(ownerId)
                 .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
         Memo memo = memoRepository.findById(memoId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 메모입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMO_NOT_FOUND));
         if (memo.getStore() == null || memo.getStore().getId() == null || !memo.getStore().getId().equals(store.getId())) {
-            throw new IllegalArgumentException("해당 매장의 메모가 아닙니다.");
+            throw new CustomException(ErrorCode.MEMO_STORE_FORBIDDEN);
         }
 
         if (memo.getStatus() != MemoStatus.REVIEWING) {
-            throw new IllegalStateException("이미 처리된 메모입니다.");
+            throw new CustomException(ErrorCode.MEMO_DECISION_DUPLICATE);
         }
 
         // 4. 상태 변경

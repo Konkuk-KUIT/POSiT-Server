@@ -40,7 +40,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .badRequest()
-                .body(ErrorResponse.fail(ErrorCode.BAD_REQUEST, errors));
+                .body(ErrorResponse.fail(ErrorCode.DTO_VALIDATION_FAILED, errors));
     }
 
     // HTTP 메서드 불일치 (405)
@@ -60,7 +60,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .badRequest()
-                .body(ErrorResponse.fail(ErrorCode.BAD_REQUEST));
+                .body(ErrorResponse.fail(ErrorCode.DTO_VALIDATION_FAILED));
     }
 
     // 기타 모든 예외

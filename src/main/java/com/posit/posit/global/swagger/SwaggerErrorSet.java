@@ -53,6 +53,21 @@ public enum SwaggerErrorSet {
         STORE_NOT_FOUND
     )),
 
+    MEMO_ADOPT(setOf(
+            STORE_NOT_FOUND,
+            MEMO_NOT_FOUND,
+            MEMO_STORE_FORBIDDEN,
+            MEMO_DECISION_DUPLICATE,
+            TEMPLATE_NOT_FOUND,
+            COUPON_TEMPLATE_FORBIDDEN
+    )),
+    MEMO_REJECT(setOf(
+            STORE_NOT_FOUND,
+            MEMO_NOT_FOUND,
+            MEMO_STORE_FORBIDDEN,
+            MEMO_DECISION_DUPLICATE
+    )),
+
     DEFAULT(setOf());
 
     private final Set<ErrorCode> codes;
