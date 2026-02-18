@@ -68,6 +68,15 @@ public enum SwaggerErrorSet {
             MEMO_DECISION_DUPLICATE
     )),
 
+    STORE_UPDATE(setOf(
+            STORE_NOT_FOUND,
+            FILTER_CODE_NOT_FOUND,
+            CONVINCE_CODE_NOT_FOUND,
+            ROAD_ADDRESS_LENGTH_OVER,
+            LOT_ADDRESS_LENGTH_OVER,
+            TIME_FORMAT_OUT
+    )),
+
     DEFAULT(setOf());
 
     private final Set<ErrorCode> codes;

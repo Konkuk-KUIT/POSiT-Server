@@ -403,7 +403,13 @@ public class OwnerService {
 
         // 주소 뒤에 상세주소를 붙임
         String fullRoadAddr = roadAddr + " " + detailAddr;                 // 도로명 + 상세
-        String fullLotAddr = geoResult.getLotAddress() + " " + detailAddr; // 지번 + 상세
+        String fullLotAddr = geoResult.getLotAddress(); // 지번
+        if (fullRoadAddr.length() > 255) {
+            throw new CustomException(ErrorCode.ROAD_ADDRESS_LENGTH_OVER);
+        }
+        if (fullLotAddr != null && fullLotAddr.length() > 255) {
+            throw new CustomException(ErrorCode.LOT_ADDRESS_LENGTH_OVER);
+        }
 
         // 영업시간 포맷팅
         String fullOpenTime = request.getOperation().getOpenTime() + "-" + request.getOperation().getCloseTime();
@@ -720,10 +726,16 @@ public class OwnerService {
 
         // 1. 내 가게 조회
         Store store = storeRepository.findByOwnerId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사장님 명의의 가게를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
 
         // 2. 주소 & 좌표 처리 (등록 로직과 동일하지만, 변경 확인)
-        String fullRoadAddr = request.address().getRoadAddress() + " " + defaultString(request.address().getDetailAddress());
+        String roadAddress = request.address().getRoadAddress();
+        String detailAddress = defaultString(request.address().getDetailAddress());
+        String fullRoadAddr = roadAddress + " " + detailAddress;
+
+        if (fullRoadAddr.length() > 255) {
+            throw new CustomException(ErrorCode.ROAD_ADDRESS_LENGTH_OVER);
+        }
 
         // 기존 주소와 다르면 지오코딩 다시 호출
         BigDecimal lat = store.getLatitude();
@@ -734,11 +746,21 @@ public class OwnerService {
             GeocodingService.GeoResult geo = geocodingService.getGeoData(request.address().getRoadAddress());
             lat = BigDecimal.valueOf(geo.getLat());
             lon = BigDecimal.valueOf(geo.getLon());
-            fullLotAddr = geo.getLotAddress() + " " + defaultString(request.address().getDetailAddress());
+            fullLotAddr = geo.getLotAddress();
+            if (fullLotAddr != null && fullLotAddr.length() > 255) {
+                throw new CustomException(ErrorCode.LOT_ADDRESS_LENGTH_OVER);
+            }
         }
 
         // 3. 영업시간 & 휴무일 가공
-        String fullOpenTime = request.operation().getOpenTime() + "-" + request.operation().getCloseTime();
+        String openTime = request.operation().getOpenTime();
+        String closeTime = request.operation().getCloseTime();
+
+        if (!isValidHHmm(openTime) || !isValidHHmm(closeTime)) {
+            throw new CustomException(ErrorCode.TIME_FORMAT_OUT);
+        }
+
+        String fullOpenTime = openTime + "-" + closeTime;
 
         String notOpenDayStr = null;
         if (request.operation().getRegularHolidays() != null && !request.operation().getRegularHolidays().isEmpty()) {
@@ -773,13 +795,11 @@ public class OwnerService {
 
         // 6. 필터 (TYPE) 수정
         if (request.type() != null) {
-            // 기존 필터 연결 삭제
             storeFilterRepository.deleteByStoreId(store.getId());
             storeFilterRepository.flush(); // 즉시 반영
 
-            // 새 필터 저장
             Filter typeFilter = filterRepository.findByCategoryAndCode("TYPE", request.type())
-                    .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 필터"));
+                    .orElseThrow(() -> new CustomException(ErrorCode.FILTER_CODE_NOT_FOUND));
 
             StoreFilter storeFilter = StoreFilter.builder()
                     .store(store)
@@ -789,7 +809,7 @@ public class OwnerService {
         }
 
         // 7. 이미지 수정 (싹 지우고 다시 등록)
-        store.getImages().clear(); // 기존 이미지 삭제 (orphanRemoval 동작)
+        store.getImages().clear();
         if (request.imageUrls() != null) {
             int order = 1;
             for (String url : request.imageUrls()) {
@@ -799,12 +819,11 @@ public class OwnerService {
                         .thumbnailUrl(url)
                         .sortOrder(order++)
                         .build();
-                store.addImage(image); // 리스트에 추가
+                store.addImage(image);
             }
         }
 
-        // 8. 메뉴 수정 (싹 지우고 다시 등록)
-        store.getMenus().clear(); // 기존 메뉴 삭제
+        store.getMenus().clear();
         if (request.menus() != null) {
             for (StoreUpdateRequest.MenuDto menuDto : request.menus()) {
                 Menu menu = Menu.builder()
@@ -830,7 +849,7 @@ public class OwnerService {
 
             for (String code : uniqueCodes) {
                 Convince convince = convinceRepository.findByCode(code)
-                        .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 코드: " + code));
+                        .orElseThrow(() -> new CustomException(ErrorCode.CONVINCE_CODE_NOT_FOUND));
 
                 StoreConvince storeConvince = StoreConvince.builder()
                         .store(store)
@@ -846,6 +865,12 @@ public class OwnerService {
     // null 방지용 헬퍼
     private String defaultString(String str) {
         return str == null ? "" : str;
+    }
+
+    // HH:mm 형식 검증 (00:00 ~ 23:59)
+    private boolean isValidHHmm(String time) {
+        if (time == null) return false;
+        return time.matches("^([01]\\d|2[0-3]):[0-5]\\d$");
     }
 
     public Long getMyStoreId(Long ownerId) {

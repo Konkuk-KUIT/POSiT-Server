@@ -243,6 +243,7 @@ public class OwnerController {
     }
 
     @Operation(summary = "내 가게 정보 전체 수정", description = "가게 등록과 동일한 포맷으로 데이터를 받아 기존 정보를 덮어씁니다.")
+    @ApiErrorCodes(SwaggerErrorSet.STORE_UPDATE)
     @PutMapping("/owner/store")
     public ResponseEntity<ApiResponse<Long>> updateStore(
             @AuthenticationPrincipal UserPrincipal user, // 토큰에서 사장님 ID 추출

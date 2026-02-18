@@ -23,7 +23,6 @@ public record StoreUpdateRequest(
     @Getter
     @NoArgsConstructor
     public static class AddressDto {
-        @NotBlank(message = "도로명 주소는 필수입니다.")
         private String roadAddress;   // 지오코딩의 기준이 됨
 
         private String detailAddress; // 상세 주소
