@@ -18,4 +18,6 @@ public interface StoreConvinceRepository extends JpaRepository<StoreConvince, Lo
     List<String> findDisplayNamesByStoreId(Long storeId);
 
     void deleteByStoreId(Long storeId);
+
+    List<StoreConvince> findByStoreId(Long storeId);
 }

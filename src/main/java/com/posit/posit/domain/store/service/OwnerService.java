@@ -838,6 +838,7 @@ public class OwnerService {
         }
 
         // 9. 편의시설 수정 (Repo로 직접 삭제 후 등록)
+        /*
         storeConvinceRepository.deleteByStoreId(store.getId());
         storeConvinceRepository.flush();
         if (request.convinces() != null && !request.convinces().isEmpty()) {
@@ -858,7 +859,7 @@ public class OwnerService {
                 storeConvinceRepository.save(storeConvince);
             }
         }
-
+        */
         return store.getId();
     }
 
@@ -880,5 +881,31 @@ public class OwnerService {
         Store store = storeRepository.findByOwnerId(ownerId)
                 .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
         return store.getId();
+    }
+
+    @Transactional
+    public ConvinceUpdate updateConvince(Long ownerId, ConvinceUpdate req) {
+        Store store = storeRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
+        storeConvinceRepository.deleteByStoreId(store.getId());
+        storeConvinceRepository.flush();
+
+        List<String> uniqueCodes = req.convinces().stream()
+                .filter(code -> code != null && !code.isBlank())
+                .distinct()
+                .toList();
+        for (String code : uniqueCodes) {
+            Convince convince = convinceRepository.findByCode(code)
+                    .orElseThrow(() -> new CustomException(ErrorCode.CONVINCE_CODE_NOT_FOUND));
+            StoreConvince storeConvince = StoreConvince.builder()
+                    .store(store).convince(convince).build();
+            storeConvinceRepository.save(storeConvince);
+        }
+        List<String> updateCodes = storeConvinceRepository
+                .findByStoreId(store.getId())
+                .stream()
+                .map(sc -> sc.getConvince().getCode())
+                .toList();
+        return ConvinceUpdate.of(updateCodes);
     }
 }
