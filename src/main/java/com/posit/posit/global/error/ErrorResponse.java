@@ -14,16 +14,16 @@ public record ErrorResponse(
 
         @Schema(description = "에러 코드 정보")
         ErrorCode errorCode,
-
+        String message,
         @Schema(description = "필드 유효성 검증 실패 목록 (옵션)")
         List<FieldErrorDetail> errors
 ) {
     public static ErrorResponse fail(ErrorCode errorCode) {
-        return new ErrorResponse(false, errorCode, null);
+        return new ErrorResponse(false, errorCode, errorCode.getMessage(), null);
     }
 
     public static ErrorResponse fail(ErrorCode errorCode, List<FieldErrorDetail> errors) {
-        return new ErrorResponse(false, errorCode, errors);
+        return new ErrorResponse(false, errorCode, errorCode.getMessage(), errors);
     }
 
     @JsonProperty("code")

@@ -58,6 +58,7 @@ public class SwaggerErrorResponseCustomizer {
         Map<String, Object> v = new LinkedHashMap<>();
         v.put("isSuccess", false);
         v.put("errorCode", errorCode.name());
+        v.put("message", errorCode.getMessage());
         v.put("code", errorCode.getCode());
         return v;
     }

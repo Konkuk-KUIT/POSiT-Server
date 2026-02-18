@@ -8,6 +8,8 @@ import com.posit.posit.domain.store.dto.response.*;
 import com.posit.posit.domain.store.service.OwnerService;
 import com.posit.posit.domain.user.dto.UserPrincipal;
 import com.posit.posit.global.response.ApiResponse;
+import com.posit.posit.global.swagger.ApiErrorCodes;
+import com.posit.posit.global.swagger.SwaggerErrorSet;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -79,6 +81,7 @@ public class OwnerController {
 
     // 5-1. 답변 채택
     @Operation(summary = "답변 채택", description = "마음에 드는 답변(메모)을 채택하고 쿠폰을 발급합니다.")
+    @ApiErrorCodes(SwaggerErrorSet.MEMO_ADOPT)
     @PostMapping("/memos/{memoId}/adopt")
     public ResponseEntity<ApiResponse<ConcernAdoptResponse>> adoptMemo(
             @AuthenticationPrincipal UserPrincipal user,
@@ -90,6 +93,7 @@ public class OwnerController {
 
     // 5-2. 답변 거절
     @Operation(summary = "답변 거절", description = "마음에 들지 않는 답변(메모)을 거절 처리합니다.")
+    @ApiErrorCodes(SwaggerErrorSet.MEMO_REJECT)
     @PostMapping("/memos/{memoId}/reject")
     public ResponseEntity<ApiResponse<ConcernRejectResponse>> rejectMemo(
             @AuthenticationPrincipal UserPrincipal user,
