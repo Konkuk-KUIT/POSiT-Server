@@ -14,10 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 
 @Tag(name = "Auth", description = "인증/인가 API")
@@ -37,7 +34,7 @@ public class AuthController {
     @Operation(summary = "휴대폰 인증번호 요청", description = "회원가입 시 휴대폰 인증번호 요청(발급)")
     @ApiErrorCodes(SwaggerErrorSet.PHONE_VERIFY_REQUEST)
     @PostMapping("/phone/verification")
-    public ResponseEntity<ApiResponse<PhoneVerificationResponse>>phoneVerify(@Valid @RequestBody PhoneVerificationRequest request) {
+    public ResponseEntity<ApiResponse<PhoneVerificationResponse>> phoneVerify(@Valid @RequestBody PhoneVerificationRequest request) {
         return ResponseEntity.ok(ApiResponse.success(authService.phoneVerify(request)));
     }
 
@@ -62,4 +59,11 @@ public class AuthController {
     public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest request) {
         return ResponseEntity.ok(ApiResponse.success(authService.login(request)));
     }
+
+    @Operation(summary = "아이디 중복 확인", description = "회원가입 시 아이디 중복 확인")
+    @GetMapping("/id/confirm")
+    public ResponseEntity<ApiResponse<Boolean>> loginIdConfirm(@RequestParam String loginId) {
+        return ResponseEntity.ok(ApiResponse.success(authService.loginIdConfirm(loginId)));
+    }
+
 }

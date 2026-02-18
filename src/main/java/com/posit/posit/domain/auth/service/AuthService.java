@@ -126,8 +126,8 @@ public class AuthService {
 
     private void createStandardTemplate(User owner) {
         final String AMERICANO = "https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/AlexanderMenu1.jpeg";
-        final String DESSERT   = "https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/LazyHourMenu3.jpeg";
-        final String ICETEA    = "https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/ASMenu3.jpeg";
+        final String DESSERT = "https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/LazyHourMenu3.jpeg";
+        final String ICETEA = "https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/ASMenu3.jpeg";
 
         if (!couponTemplateRepository.existsByCreatedByIdAndImage(owner.getId(), AMERICANO)) {
             couponTemplateRepository.save(
@@ -356,5 +356,16 @@ public class AuthService {
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
 
         current.revoke();
+    }
+
+    @Transactional(readOnly = true)
+    public Boolean loginIdConfirm(String confirmId) {
+        if (confirmId == null || confirmId.isBlank()) {
+            throw new CustomException(ErrorCode.DTO_VALIDATION_FAILED);
+        }
+
+        // true  : 사용 가능 (중복 아님)
+        // false : 이미 존재 (중복)
+        return !userRepository.existsByLoginId(confirmId);
     }
 }
