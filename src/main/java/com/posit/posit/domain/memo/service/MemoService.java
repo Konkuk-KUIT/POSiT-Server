@@ -168,7 +168,7 @@ public class MemoService {
                         .memoId(memo.getId())
                         .storeName(memo.getStore().getName())
                         .category(getCategoryName(memo.getMemoType())) // 한글 변환
-                        .content(getPreview(memo.getContent())) // 미리보기 삽입
+                        .content(getPreview(memo.getTitle())) // 미리보기 삽입
                         .status(memo.getStatus().name())
                         .createdAt(memo.getCreatedAt().toLocalDate().toString())
                         .ownerRead(memo.isOwnerRead())
