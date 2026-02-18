@@ -820,8 +820,15 @@ public class OwnerService {
 
         // 9. 편의시설 수정 (Repo로 직접 삭제 후 등록)
         storeConvinceRepository.deleteByStoreId(store.getId());
-        if (request.convinces() != null) {
-            for (String code : request.convinces()) {
+        storeConvinceRepository.flush();
+        if (request.convinces() != null && !request.convinces().isEmpty()) {
+
+            List<String> uniqueCodes = request.convinces().stream()
+                    .filter(code -> code != null && !code.isBlank())
+                    .distinct()
+                    .toList();
+
+            for (String code : uniqueCodes) {
                 Convince convince = convinceRepository.findByCode(code)
                         .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 코드: " + code));
 
