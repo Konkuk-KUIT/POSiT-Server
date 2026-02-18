@@ -28,6 +28,7 @@ public enum ErrorCode {
     TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND, 40405, "존재하지 않는 쿠폰 템플릿입니다"),
     FILTER_CODE_NOT_FOUND(HttpStatus.NOT_FOUND, 40406, "지원하지 않는 필터 타입입니다."),
     CONVINCE_CODE_NOT_FOUND(HttpStatus.NOT_FOUND, 40407, "지원하지 않는 편의시설 코드입니다."),
+    CONCERN_NOT_FOUND(HttpStatus.NOT_FOUND, 40408, "해당 고민글을 찾을 수 없습니다."),
 
     // -------------------------------------------------
     // 403 FORBIDDEN
@@ -65,7 +66,10 @@ public enum ErrorCode {
     DB_CONSTRAINT_VIOLATION(HttpStatus.BAD_REQUEST, 40010, "DB 제약조건 오류입니다."),
     ROAD_ADDRESS_LENGTH_OVER(HttpStatus.BAD_REQUEST, 40011, "도로명 주소 최대 길이 초과입니다. (최대255)"),
     LOT_ADDRESS_LENGTH_OVER(HttpStatus.BAD_REQUEST, 40011, "지번 주소 최대 길이 초과입니다. (최대255)"),
-    TIME_FORMAT_OUT(HttpStatus.BAD_REQUEST, 40012, "시간 요청이 양식과 맞지 않습니다 (HH:mm)")
+    TIME_FORMAT_OUT(HttpStatus.BAD_REQUEST, 40012, "시간 요청이 양식과 맞지 않습니다 (HH:mm)"),
+    ANSWER_CONCERN_ESSENTIAL(HttpStatus.BAD_REQUEST, 40013, "답변(ANSWER) 작성 시 고민 ID(concernId)는 필수입니다."),
+    CONCERN_STORE_MISMATCH(HttpStatus.BAD_REQUEST, 40014, "해당 고민글은 이 가게의 고민글의 아닙니다."),
+    FREE_TYPE_ESSENTIAL(HttpStatus.BAD_REQUEST, 40015, "자유 메모(FREE) 작성 시 카테고리(freeType)는 필수입니다."),
     ;
 
 

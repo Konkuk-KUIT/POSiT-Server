@@ -82,6 +82,21 @@ public enum SwaggerErrorSet {
             CONVINCE_CODE_NOT_FOUND
     )),
 
+    CREATE_CONCERN(setOf(
+            STORE_NOT_FOUND,
+            TEMPLATE_NOT_FOUND,
+            COUPON_TEMPLATE_FORBIDDEN
+    )),
+
+    CREATE_MEMO(setOf(
+            USER_NOT_FOUND,
+            STORE_NOT_FOUND,
+            ANSWER_CONCERN_ESSENTIAL,
+            CONCERN_NOT_FOUND,
+            CONCERN_STORE_MISMATCH,
+            FREE_TYPE_ESSENTIAL
+    )),
+
     DEFAULT(setOf());
 
     private final Set<ErrorCode> codes;
@@ -91,7 +106,8 @@ public enum SwaggerErrorSet {
         codes.addAll(setOf(
                 BAD_REQUEST,
                 METHOD_NOT_ALLOWED,
-                INTERNAL_ERROR
+                INTERNAL_ERROR,
+                DB_CONSTRAINT_VIOLATION
         ));
         this.codes = codes;
     }

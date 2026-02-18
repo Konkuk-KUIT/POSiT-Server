@@ -4,6 +4,7 @@ import com.posit.posit.domain.memo.entity.FreeType;
 import com.posit.posit.domain.memo.entity.MemoType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -21,9 +22,11 @@ public class MemoCreateRequest {
     private FreeType freeType; // FREE일 때 필수 (TIP, MARKETING...)
 
     @NotBlank(message = "제목을 입력해주세요.")
+    @Size(max = 50)
     private String title;
 
     @NotBlank(message = "내용을 입력해주세요.")
+    @Size(max = 150)
     private String content;
 
     private List<ImageDto> images; // 이미지 리스트

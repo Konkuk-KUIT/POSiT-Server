@@ -53,6 +53,7 @@ public class OwnerController {
 
     // 3. 고민 등록
     @Operation(summary = "고민 등록", description = "가게에 대한 고민글을 작성합니다.")
+    @ApiErrorCodes(SwaggerErrorSet.CREATE_CONCERN)
     @PostMapping("/owner/concerns")
     public ResponseEntity<ApiResponse<ConcernCreateResponse>> createConcern(
             @AuthenticationPrincipal UserPrincipal user,
