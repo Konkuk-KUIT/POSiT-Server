@@ -216,7 +216,7 @@ public class OwnerService {
                 .title(template.getTitle())
                 .description(template.getDescription())
                 .image(template.getImage())
-                .condition("매장 방문 후 쿠폰 제시") // todo: 사용 조건??
+                .condition("매장 방문 후 쿠폰 제시")
                 .expiredAt(expiredAt)
                 .status(IssuedCouponStatus.ISSUED)
                 .build();
