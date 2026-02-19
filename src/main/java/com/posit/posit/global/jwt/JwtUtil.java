@@ -28,7 +28,7 @@ public class JwtUtil {
 
     public JwtUtil(
             @Value("${JWT_SECRET}") String secret,
-            @Value("${jwt.access-expiry-ms:1209600000}") long accessTokenExpiryMs, //기본 15분 (900000) //todo : 현재 14일로 설정, 서비스시 변경 필요
+            @Value("${jwt.access-expiry-ms:900000}") long accessTokenExpiryMs, //기본 15분 (900000)
             @Value("${jwt.refresh-expiry-ms:1209600000}") long refreshTokenExpiryMs // 기본 14일
     ) {
         byte[] keyBytes;
