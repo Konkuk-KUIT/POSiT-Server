@@ -88,7 +88,8 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",
                 "http://localhost:5173",// 로컬 프론트엔드
-                "https://kuit-6th-posit.vercel.app"  //  본인의 Vercel 배포 주소 (뒤에 슬래시 / 뺄것)
+                "https://kuit-6th-posit.vercel.app",  //  본인의 Vercel 배포 주소 (뒤에 슬래시 / 뺄것)
+                "https://6thposit.vercel.app/"
 
         ));
 
