@@ -1,5 +1,5 @@
 -- ============================================================
--- V10__insert_test_guest_template_concern_memo.sql
+-- R__02_insert_test_guest_template_concern_memo.sql
 -- 설명:
 -- 1) 더미 GUEST 5명
 -- 2) 매장별 쿠폰 템플릿 (store.owner_id 기준)
@@ -9,9 +9,6 @@
 -- ============================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
-
-
-ALTER TABLE memo MODIFY title VARCHAR(50) NOT NULL;
 
 -- Resolve store ids by business_number (avoid relying on store.id or store.name)
 SET @bn1 := '1000000001';

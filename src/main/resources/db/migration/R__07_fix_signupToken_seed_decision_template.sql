@@ -20,36 +20,6 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
-
--- ============================================================
--- 2. store 수정 (재실행 안전)
--- ============================================================
-
-UPDATE store
-SET name = 'cafe 462'
-WHERE id = 5
-  AND name <> 'cafe 462';
-
-UPDATE store
-SET open_time = '10:00-00:00'
-WHERE id = 2
-  AND open_time <> '10:00-00:00';
-
-
--- ============================================================
--- 3. TYPE filter 제거 (JOIN 깨진거 수정)
--- ============================================================
-
-DELETE sf
-FROM store_filter sf
-JOIN filter f ON f.id = sf.filter_id
-WHERE sf.store_id = (
-    SELECT id FROM store WHERE name='카페 언필드'
-)
-AND f.category = 'TYPE'
-AND f.code = 'BRUNCH';
-
-
 -- ============================================================
 -- 4. decision → coupon_template 매핑 (없는 것만)
 -- ============================================================

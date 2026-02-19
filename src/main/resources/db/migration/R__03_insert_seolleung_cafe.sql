@@ -1,11 +1,3 @@
--- cafe 462 (store_id=4) 메뉴 이미지 누락 복구
-UPDATE menu
-SET image = 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/Cafe462Menu_1.jpeg'
-WHERE store_id = (SELECT id FROM store WHERE business_number='1000000004') AND sort_order = 1 AND (image IS NULL OR image = '');
-
-UPDATE menu
-SET image = 'https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/Cafe462Menu_2.jpeg'
-WHERE store_id = (SELECT id FROM store WHERE business_number='1000000004') AND sort_order = 2 AND (image IS NULL OR image = '');
 
 -- ===========================
 -- V12 : 선릉역 인근 카페 6개 추가
@@ -21,7 +13,7 @@ SET @bn11 := '1000000011';
 SET @bn12 := '1000000012';
 
 -- 7. 카페온나 선릉점 (business_number=1000000007)
-INSERT INTO store (name, road_address, open_time, not_open, phone, description, category, latitude, longitude, sns_link, business_number)
+INSERT INTO store (name, road_address, open_time, not_open, phone, description, category, latitude, longitude, sns_link, business_number, lot_address)
 VALUES (
            '카페온나 선릉점',
            '서울 강남구 테헤란로47길 8 1층 106호',
@@ -31,11 +23,12 @@ VALUES (
            '아늑한 공간에서 즐기는 여유로운 한잔',
            'CAFE', 37.504215,127.045434,
            'https://www.instagram.com/cafe.onna_seolleung/profilecard/?igsh=MTVvOTFvZHBpZDI4bg%3D%3D',
-           '1000000007'
+           '1000000007',
+            '역삼동 702-16'
        );
 
 -- 8. 알렉산더 커피 스튜디오 (business_number=1000000008)
-INSERT INTO store (name, road_address, open_time, not_open, phone, description, category, latitude, longitude, sns_link, business_number)
+INSERT INTO store (name, road_address, open_time, not_open, phone, description, category, latitude, longitude, sns_link, business_number, lot_address)
 VALUES (
            '알렉산더 커피 스튜디오',
            '서울 강남구 테헤란로51길 23 1층 알렉산더 커피 스튜디오',
@@ -46,11 +39,12 @@ VALUES (
            'CAFE',
            37.505190, 127.045745,
            NULL,
-           '1000000008'
+           '1000000008',
+        '서울 강남구 역삼동 704-47'
        );
 
 -- 9. 에이에스 커피 (business_number=1000000009)
-INSERT INTO store (name, road_address, open_time, not_open, phone, description, category, latitude, longitude, sns_link, business_number)
+INSERT INTO store (name, road_address, open_time, not_open, phone, description, category, latitude, longitude, sns_link, business_number, lot_address)
 VALUES (
            '에이에스 커피',
            '서울 강남구 선릉로 424 1동 1층 1호',
@@ -61,11 +55,12 @@ VALUES (
            'CAFE',
            37.502908, 127.050058,
            NULL,
-           '1000000009'
+           '1000000009',
+        '대치동 897'
        );
 
 -- 10. 언노운 커피 (business_number=1000000010)
-INSERT INTO store (name, road_address, open_time, not_open, phone, description, category, latitude, longitude, sns_link, business_number)
+INSERT INTO store (name, road_address, open_time, not_open, phone, description, category, latitude, longitude, sns_link, business_number, lot_address)
 VALUES (
            '언노운 커피',
            '서울 강남구 역삼로 409 지상1층 106호 언노운커피',
@@ -76,11 +71,12 @@ VALUES (
            'CAFE',
            37.501076, 127.051788,
            'https://www.instagram.com/unk.nowncoffee',
-           '1000000010'
+           '1000000010',
+        '서울 강남구 대치동 907-12'
        );
 
 -- 11. 텟어텟 선릉 (business_number=1000000011)
-INSERT INTO store (name, road_address, open_time, not_open, phone, description, category, latitude, longitude, sns_link, business_number)
+INSERT INTO store (name, road_address, open_time, not_open, phone, description, category, latitude, longitude, sns_link, business_number, lot_address)
 VALUES (
            '텟어텟 선릉',
            '서울 강남구 선릉로86길 10-5 . 지상1층',
@@ -91,11 +87,12 @@ VALUES (
            'CAFE',
            37.502920, 127.050997,
            'https://www.instagram.com/tete.a.tete.coffee?igsh=M3Y4anR2bTZvb2pj',
-           '1000000011'
+           '1000000011',
+        '서울 강남구 대치동 897-16'
        );
 
 -- 12. 카페 레이어프로젝트 (business_number=1000000012)
-INSERT INTO store (name, road_address, open_time, not_open, phone, description, category, latitude, longitude, sns_link, business_number)
+INSERT INTO store (name, road_address, open_time, not_open, phone, description, category, latitude, longitude, sns_link, business_number, lot_address)
 VALUES (
            '카페 레이어프로젝트',
            '서울 강남구 역삼로63길 19 1,2,3층',
@@ -106,7 +103,7 @@ VALUES (
            'CAFE',
            37.502374, 127.051939,
            'http://instagram.com/cafelayerstudio',
-           '1000000012'
+           '1000000012','서울 강남구 대치동 899-16'
        );
 
 -- Resolve inserted store ids (must be AFTER store inserts)
@@ -181,28 +178,8 @@ SELECT id, '1000000012' FROM users WHERE login_id='owner12';
 UPDATE store SET owner_id = (SELECT id FROM users WHERE login_id='owner12') WHERE business_number='1000000012';
 
 -- =============================================================================
--- V12: convince (UI chips) + store_convince 매핑 (bulk 스타일)
--- =============================================================================
-
--- insert convince (UI chips)
-INSERT INTO convince (display_name, code) VALUES
-    ('간편결제', 'EASY_PAY')
-    ON DUPLICATE KEY UPDATE
-                         display_name = VALUES(display_name);
-
-
--- =============================================================================
 -- V12: TYPE filters + store_filter mapping (NO hardcoded store_id)
 -- =============================================================================
-
--- Ensure TYPE filters exist (idempotent)
-INSERT INTO filter (category, code, display_name) VALUES
-  ('TYPE', 'STUDY',   '스터디 카페'),
-  ('TYPE', 'BRUNCH',  '브런치 카페'),
-  ('TYPE', 'DESSERT', '디저트 카페')
-ON DUPLICATE KEY UPDATE
-  display_name = VALUES(display_name);
-
 -- Map store -> TYPE filter (edit codes as needed)
 -- Store 7
 INSERT IGNORE INTO store_filter (store_id, filter_id)
@@ -214,7 +191,7 @@ SELECT @s8, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
 
 -- Store 9
 INSERT IGNORE INTO store_filter (store_id, filter_id)
-SELECT @s9, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
+SELECT @s9, f.id FROM filter f WHERE f.category='TYPE' AND f.code='BRUNCH';
 
 -- Store 10
 INSERT IGNORE INTO store_filter (store_id, filter_id)
@@ -222,11 +199,11 @@ SELECT @s10, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
 
 -- Store 11
 INSERT IGNORE INTO store_filter (store_id, filter_id)
-SELECT @s11, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
+SELECT @s11, f.id FROM filter f WHERE f.category='TYPE' AND f.code='STUDY';
 
 -- Store 12
 INSERT IGNORE INTO store_filter (store_id, filter_id)
-SELECT @s12, f.id FROM filter f WHERE f.category='TYPE' AND f.code='DESSERT';
+SELECT @s12, f.id FROM filter f WHERE f.category='TYPE' AND f.code='BRUNCH';
 
 
 -- -----------------------------------------------------------------------------
@@ -546,3 +523,7 @@ UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uplo
 WHERE store_id=@s12 AND sort_order=2 AND (image IS NULL OR image='');
 UPDATE menu SET image='https://posit-deploy.s3.ap-northeast-2.amazonaws.com/uploads/menu/LayerMenu3.png'
 WHERE store_id=@s12 AND sort_order=3 AND (image IS NULL OR image='');
+
+UPDATE store
+SET coupon_pin_hash = '$2a$10$xl9mSw0arY0MbyaC9jQsn.Z2WzL/eqoYXj0RHL2CURIo/2B1VC.1e'
+WHERE coupon_pin_hash IS NULL;
