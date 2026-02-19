@@ -1,12 +1,3 @@
--- 1. memo_image 테이블 먼저 생성
-CREATE TABLE memo_image (
-                            id BIGINT NOT NULL AUTO_INCREMENT,
-                            memo_id BIGINT NOT NULL,
-                            image_url VARCHAR(2048) NOT NULL COMMENT 'S3 Key 또는 Full URL',
-                            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                            PRIMARY KEY (id),
-                            KEY idx_memo_image_memo (memo_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 2. [데이터 이관] 기존 memo 테이블에 이미지가 있던 경우, 새 테이블로 옮기기
 -- (콤마로 구분된 데이터가 아니라 URL 하나만 들어있던 경우를 가정)

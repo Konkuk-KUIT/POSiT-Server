@@ -46,7 +46,6 @@ public class AuthService {
 
     @Transactional
     public SignupResponse signup(SignupRequest req) {
-        /*
         PhoneVerification pv = phoneVerificationRepository
                 .findTopByPhoneOrderByCreatedAtDesc(req.phone())
                 .orElseThrow(() -> new CustomException(ErrorCode.PHONE_VERIFICATION_NOT_FOUND));
@@ -77,7 +76,6 @@ public class AuthService {
         // 재사용 방지: 회원가입 성공 시 signupToken 즉시 소진
         pv.consumeSignupToken();
         phoneVerificationRepository.save(pv);
-        */
 
         // 2) 중복 체크
         if (userRepository.existsByLoginId(req.loginId())) {

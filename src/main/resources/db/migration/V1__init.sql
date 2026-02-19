@@ -37,16 +37,16 @@ CREATE TABLE owner_profile (
 CREATE TABLE store (
                        id BIGINT NOT NULL AUTO_INCREMENT,
                        owner_id BIGINT NULL,
-                       name VARCHAR(20) NOT NULL,
+                       name VARCHAR(30) NOT NULL,
                        phone VARCHAR(15) NOT NULL,
-                       description VARCHAR(50) NOT NULL,
+                       description VARCHAR(255) NOT NULL,
                        category ENUM('CAFE','RESTAURANT') NOT NULL DEFAULT 'CAFE',
                        open_time VARCHAR(20) NOT NULL COMMENT '"HH:mm-HH:mm"',
-                       not_open ENUM('MON','TUE','WED','THU','FRI','SAT','SUN') NULL,
+                       not_open VARCHAR(255) NULL,
                        latitude DECIMAL(10,7) NOT NULL,
                        longitude DECIMAL(10,7) NOT NULL,
-                       road_address VARCHAR(30) NOT NULL,
-                       lot_address VARCHAR(30) NULL,
+                       road_address VARCHAR(255) NOT NULL,
+                       lot_address VARCHAR(255) NULL,
                        sns_link VARCHAR(255) NULL,
                        coupon_pin_hash VARCHAR(255) NULL,
                        business_number VARCHAR(10) NOT NULL,
@@ -108,7 +108,7 @@ CREATE TABLE concern (
                          created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                          updated_at DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                          store_id BIGINT NOT NULL,
-                         template_id BIGINT NOT NULL,
+                         template_id BIGINT NULL,
                          PRIMARY KEY (id),
                          KEY idx_concern_store (store_id),
                          KEY idx_concern_template (template_id)
@@ -119,7 +119,7 @@ CREATE TABLE memo (
                       id BIGINT NOT NULL AUTO_INCREMENT,
                       memo_type ENUM('ANSWER','FREE') NOT NULL,
                       free_type ENUM('TIP','MARKETING','MENU_DEV','TREND','CUSTOMER_SERVICE') NULL,
-                      title VARCHAR(20) NOT NULL,
+                      title VARCHAR(50) NOT NULL,
                       content VARCHAR(150) NOT NULL,
                       image TEXT NULL,
                       status ENUM('REVIEWING','ADOPTED','REJECTED') NOT NULL DEFAULT 'REVIEWING',
@@ -128,6 +128,7 @@ CREATE TABLE memo (
                       store_id BIGINT NOT NULL,
                       user_id BIGINT NOT NULL,
                       concern_id BIGINT NULL,
+                      owner_read TINYINT(1) NOT NULL DEFAULT 0,
                       PRIMARY KEY (id),
                       KEY idx_memo_store (store_id),
                       KEY idx_memo_user (user_id),
@@ -243,6 +244,17 @@ CREATE TABLE store_convince (
                                 KEY idx_store_convince_store (store_id),
                                 KEY idx_store_convince_convince (convince_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- memo_image 테이블 먼저 생성
+CREATE TABLE memo_image (
+                            id BIGINT NOT NULL AUTO_INCREMENT,
+                            memo_id BIGINT NOT NULL,
+                            image_url VARCHAR(2048) NOT NULL COMMENT 'S3 Key 또는 Full URL',
+                            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            PRIMARY KEY (id),
+                            KEY idx_memo_image_memo (memo_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 -- -------------------------------------------------
 -- FK (ALL RESTRICT)
