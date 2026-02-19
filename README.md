@@ -1,4 +1,4 @@
-# 📌 POSiT (포짓) 
+# POSiT (포짓) 
 
 > **"생각을 현실로 만드는 메모, POSiT!"**
 >
@@ -12,56 +12,17 @@
 ![Docker](https://img.shields.io/badge/Docker-Container-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Github Actions](https://img.shields.io/badge/Github%20Actions-CI%2FCD-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)
 
-## 🏗️ 인프라 아키텍처 및 설계 의도 (Architecture)
+## 인프라 아키텍처 및 설계 의도 (Architecture)
 
 
 AWS 클라우드 환경에서 **보안(Security)**과 **배포 효율성(Maintainability)**을 최우선으로 고려하여 설계하였습니다.
-
-```mermaid
-graph TD
-    User((User))
-    
-    subgraph "Amazon Cloud (AWS)"
-        subgraph "VPC (Virtual Private Cloud)"
-            
-            subgraph "Public Subnet"
-                Nginx[Nginx / Certbot<br/>(Reverse Proxy & SSL)]
-                
-                subgraph "EC2 Instance Contents"
-                    Docker[Docker Container]
-                    subgraph "App Container"
-                        Spring[Spring Boot App]
-                        Flyway[Flyway Migration]
-                    end
-                end
-            end
-            
-            RDS[(Amazon RDS<br/>MySQL)]
-        end
-        S3[(Amazon S3<br/>Image Storage)]
-    end
-
-    User -- HTTPS (SSL) --> Nginx
-    Nginx -- Proxy --> Docker
-    Docker -- Port Mapping --> Spring
-    Spring -- JDBC --> RDS
-    Spring -- API --> S3
-    
-    %% CI/CD Flow
-    GitHub[GitHub Repo] -->|Actions Trigger| Actions[GitHub Actions]
-    Actions -->|Build & Push| DockerHub[Docker Hub]
-    DockerHub -->|Pull Image| Docker
-
-    classDef aws fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:white;
-    classDef security fill:#28a745,stroke:#white,stroke-width:2px,color:white;
-    class RDS,S3,VPC aws;
-    class Nginx security;
+https://github.com/user-attachments/assets/46cb7363-0037-47da-91d0-a49120919b02
 
 ---
 
-## 🔥 기술적 도전 및 향후 계획 (Technical Challenges & Roadmap)
+## 기술적 도전 및 향후 계획 (Technical Challenges & Roadmap)
 
-### 🏗️ 무중단 배포를 위한 아키텍처 기반 마련 (Foundation for Zero-Downtime)
+### 무중단 배포를 위한 아키텍처 기반 마련 (Foundation for Zero-Downtime)
 
 초기 설계 단계부터 서비스의 안정성과 확장성을 고려하여 **Blue/Green 무중단 배포**를 목표로 기술 스택을 선정하였습니다. 비록 한정된 개발 기간으로 인해 파이프라인 자동화까지는 도달하지 못했으나, 이를 위한 핵심 인프라 구성을 완료하였습니다.
 
@@ -73,6 +34,13 @@ graph TD
 - **도전:** 무중단 배포 시 구버전(Blue)과 신버전(Green) 애플리케이션이 동시에 DB에 접근하는 상황이 발생할 수 있어, 스키마 관리의 정합성이 필수적이었습니다.
 - **해결:** **Flyway**를 도입하여 DB 스키마 변경 이력을 코드로 관리하고, 버전 관리를 자동화했습니다. 이를 통해 배포 시 발생할 수 있는 데이터베이스 불일치 문제를 예방하고, 향후 무중단 배포 시에도 안전한 스키마 변경이 가능한 토대를 마련했습니다.
 
-### 🚀 Future Scope (향후 발전 계획)
+### Future Scope (향후 발전 계획)
 - [ ] **Blue/Green 배포 자동화:** GitHub Actions와 Nginx Reload를 연동하여 실제 무중단 배포 파이프라인 구축
 - [ ] **모니터링 시스템 구축:** Prometheus & Grafana를 도입하여 서버 리소스 및 트래픽 시각화
+
+---
+
+## ERD
+https://github.com/user-attachments/assets/615f2fb2-b0d7-4876-a9be-7cf056a1b3d5
+## ERD
+
