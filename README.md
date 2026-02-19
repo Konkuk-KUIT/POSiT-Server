@@ -16,7 +16,7 @@
 
 
 AWS 클라우드 환경에서 **보안(Security)**과 **배포 효율성(Maintainability)**을 최우선으로 고려하여 설계하였습니다.
-https://github.com/user-attachments/assets/46cb7363-0037-47da-91d0-a49120919b02
+![Architecture](https://github.com/user-attachments/assets/46cb7363-0037-47da-91d0-a49120919b02)
 
 ---
 
@@ -41,6 +41,5 @@ https://github.com/user-attachments/assets/46cb7363-0037-47da-91d0-a49120919b02
 ---
 
 ## ERD
-https://github.com/user-attachments/assets/615f2fb2-b0d7-4876-a9be-7cf056a1b3d5
-## ERD
+![ERD](https://github.com/user-attachments/assets/615f2fb2-b0d7-4876-a9be-7cf056a1b3d5)
 
